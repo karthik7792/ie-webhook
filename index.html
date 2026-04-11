@@ -616,6 +616,7 @@
       <span id="liveLabel">CONNECTING</span>
     </div>
     <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔇 SOUND</button>
+    <button class="btn-clear" onclick="sendTestAlert()" style="border-color:#ffd700;color:#ffd700;">⚡ TEST</button>
     <button class="btn-clear" onclick="clearAlerts()">CLEAR</button>
   </div>
 </header>
@@ -1008,6 +1009,34 @@ function playSound(a) {
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
   osc.start(ctx.currentTime);
   osc.stop(ctx.currentTime + 0.35);
+}
+
+// ── Test alert ────────────────────────────────────────────────
+async function sendTestAlert() {
+  const tickers = ['TSLA','META','NVDA','SPY','AAPL'];
+  const ticker = tickers[Math.floor(Math.random() * tickers.length)];
+  const tfs = ['5m','15m','30m','60m'];
+  const tf = tfs[Math.floor(Math.random() * tfs.length)];
+  const isCall = Math.random() > 0.5;
+  const score = Math.floor(Math.random() * 3) + 8; // 8-10
+  const entry = (Math.random() * 200 + 150).toFixed(2);
+  const atr = (Math.random() * 2 + 1).toFixed(2);
+  const sl = isCall ? (parseFloat(entry) - parseFloat(atr) * 1.8).toFixed(2) : (parseFloat(entry) + parseFloat(atr) * 1.8).toFixed(2);
+  const t1 = isCall ? (parseFloat(entry) + parseFloat(atr) * 2).toFixed(2) : (parseFloat(entry) - parseFloat(atr) * 2).toFixed(2);
+  const t2 = isCall ? (parseFloat(entry) + parseFloat(atr) * 3.5).toFixed(2) : (parseFloat(entry) - parseFloat(atr) * 3.5).toFixed(2);
+  const t3 = isCall ? (parseFloat(entry) + parseFloat(atr) * 6).toFixed(2) : (parseFloat(entry) - parseFloat(atr) * 6).toFixed(2);
+  const quality = score >= 9 ? '★★★ EXCEPTIONAL' : '★★ HIGH CONF';
+  const dir = isCall ? '▲' : '▼';
+  const type = isCall ? 'ENTER CALLS' : 'ENTER PUTS';
+  const dte = '[5DTE]';
+
+  const message = `TICKER:${ticker} ${dir} ${type} ${dte} [Score: ${score}/10] [TF: ${tf}] | HTF✅\nQuality: ${quality}\nEntry : ${entry}\nSL    : ${sl} (HTF e50 (15m))\nT1    : ${t1} (2R)\nT2    : ${t2} (3.5R)\nT3    : ${t3} (6R)`;
+
+  await fetch('/webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, ticker })
+  });
 }
 
 // ── Clear ─────────────────────────────────────────────────────
