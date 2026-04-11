@@ -3,7 +3,7 @@ const app = express();
 const path = require('path');
 
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('.'));
 
 // In-memory store — last 200 alerts
 let alerts = [];
