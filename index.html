@@ -815,6 +815,41 @@ function renderAlerts() {
 
 function cardHTML(a) {
   const t = formatTime(a.timestamp);
+
+  if (a.type === 'FAILED_BOS' && a.entry && a.sl && a.t1) {
+    const isPuts = /PUTS/i.test(a.raw) || a.signal === 'PUTS';
+    const stripe = isPuts ? 'var(--puts)' : 'var(--calls)';
+    const biasColor = isPuts ? 'var(--puts)' : 'var(--calls)';
+    const biasText = isPuts ? 'FAILED BOS — PUTS' : 'FAILED BOS — CALLS';
+    return `<div class="alert-card sig-FAILED_BOS dir-${a.signal}" data-id="${a.id}">
+      <div class="card-stripe" style="background:${stripe}"></div>
+      <div class="card-body" style="padding:10px 14px 10px 0;">
+        <div class="card-top" style="margin-bottom:8px;">
+          <span class="ticker-badge" style="color:${biasColor}">${a.ticker}</span>
+          <span class="tf-tag">${a.timeframe}</span>
+          <span class="type-tag type-FAILED_BOS">FAILED BOS</span>
+          <span class="ts" style="margin-left:auto">${t}</span>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;line-height:2.2;">
+          <div style="display:grid;grid-template-columns:70px 1fr;gap:0 12px;">
+            <span style="color:var(--text-dim)">BIAS</span>
+            <span style="color:${biasColor};font-weight:700">${biasText}</span>
+            <span style="color:var(--text-dim)">ENTRY</span>
+            <span style="color:var(--text)">${a.entry}</span>
+            <span style="color:var(--text-dim)">SL</span>
+            <span style="color:var(--puts)">${a.sl} <span style="color:var(--text-dim);font-size:0.65rem;">(above wick)</span></span>
+            <span style="color:var(--text-dim)">T1</span>
+            <span style="color:var(--gold)">${a.t1} <span style="color:var(--text-dim);font-size:0.65rem;">(1.5R — e21)</span></span>
+            <span style="color:var(--text-dim)">T2</span>
+            <span style="color:var(--orange)">${a.t2 || '—'} <span style="color:var(--text-dim);font-size:0.65rem;">(2.5R — e50)</span></span>
+            <span style="color:var(--text-dim)">T3</span>
+            <span style="color:var(--calls)">${a.t3 || '—'} <span style="color:var(--text-dim);font-size:0.65rem;">(4R — Day Low)</span></span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
   const levels = [];
   if (a.entry) levels.push(`<span class="level-item"><span class="lv-label">ENTRY</span><span class="lv-val">${a.entry}</span></span>`);
   if (a.sl)    levels.push(`<span class="level-item lv-sl"><span class="lv-label">SL</span><span class="lv-val">${a.sl}</span></span>`);
