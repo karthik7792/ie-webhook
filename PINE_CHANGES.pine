@@ -1,0 +1,66 @@
+// ============================================================
+// IE v6.2 Rev13.6 — WEBHOOK ALERT ADDITIONS
+// ============================================================
+// Add this section AFTER your existing alerts section.
+// These send structured JSON to your dashboard webhook.
+// Replace YOUR_RENDER_URL with your actual Render.com URL.
+//
+// HOW TRADINGVIEW WEBHOOKS WORK:
+//   - In TV alert dialog → "Webhook URL" field
+//   - In "Message" field → paste the alert() string below
+//   - TV sends the message as JSON body: { "message": "..." }
+//   - Your dashboard parses it automatically
+//
+// IMPORTANT: The existing alert() calls already contain all
+// the info needed. You just need to point TV alerts at your
+// webhook URL. No Pine Script changes required for basic use.
+//
+// However, if you want the ticker to auto-detect correctly,
+// add syminfo.ticker to your alert strings as shown below.
+// ============================================================
+
+// ── STEP 1: Update your existing entry alert strings ─────────
+// Find this in your script (around line 860):
+
+// CURRENT (entry calls):
+alert("▲ ENTER CALLS " + _dte_tag + " [Score: " + str.tostring(call_score) + "/10] [TF: " + tf_label + "]" + _mtf_status + "\nQuality: " + _quality + "\nEntry : " + _p(close) + "\nSL    : " + _p(_sl_v) + " (" + _sl_label_txt + ")\nT1    : " + _p(close + atr * rr_t1) + " (" + str.tostring(rr_t1) + "R)\nT2    : " + _p(close + atr * rr_t2) + " (" + str.tostring(rr_t2) + "R)\nT3    : " + _p(close + atr * rr_t3) + " (" + str.tostring(rr_t3) + "R)", alert.freq_once_per_bar_close)
+
+// UPDATED (adds ticker + TF for dashboard parsing):
+alert("TICKER:" + syminfo.ticker + " ▲ ENTER CALLS " + _dte_tag + " [Score: " + str.tostring(call_score) + "/10] [TF: " + tf_label + "]" + _mtf_status + "\nQuality: " + _quality + "\nEntry : " + _p(close) + "\nSL    : " + _p(_sl_v) + " (" + _sl_label_txt + ")\nT1    : " + _p(close + atr * rr_t1) + " (" + str.tostring(rr_t1) + "R)\nT2    : " + _p(close + atr * rr_t2) + " (" + str.tostring(rr_t2) + "R)\nT3    : " + _p(close + atr * rr_t3) + " (" + str.tostring(rr_t3) + "R)", alert.freq_once_per_bar_close)
+
+// UPDATED (entry puts):
+alert("TICKER:" + syminfo.ticker + " ▼ ENTER PUTS " + _dte_tag + " [Score: " + str.tostring(put_score) + "/10] [TF: " + tf_label + "]" + _mtf_status_p + "\nQuality: " + _quality_p + "\nEntry : " + _p(close) + "\nSL    : " + _p(_sl_v_p) + " (" + _sl_label_p + ")\nT1    : " + _p(close - atr * rr_t1) + " (" + str.tostring(rr_t1) + "R)\nT2    : " + _p(close - atr * rr_t2) + " (" + str.tostring(rr_t2) + "R)\nT3    : " + _p(close - atr * rr_t3) + " (" + str.tostring(rr_t3) + "R)", alert.freq_once_per_bar_close)
+
+// ── STEP 2: Update exit alerts similarly ────────────────────
+// Add "TICKER:" + syminfo.ticker + " " prefix to each alert:
+
+alert("TICKER:" + syminfo.ticker + " 🎯 CALLS T1 HIT — " + _p(t1) + " | Remove ⅓, move SL to entry (" + _p(entry) + ")", alert.freq_once_per_bar_close)
+alert("TICKER:" + syminfo.ticker + " 🎯 CALLS T2 HIT — " + _p(t2) + " | Remove ⅓, trail stop", alert.freq_once_per_bar_close)
+alert("TICKER:" + syminfo.ticker + " ✅ CALLS T3 HIT — " + _p(t3) + " | Full exit", alert.freq_once_per_bar_close)
+alert("TICKER:" + syminfo.ticker + " 🛑 CALLS STOPPED OUT", alert.freq_once_per_bar_close)
+alert("TICKER:" + syminfo.ticker + " 🎯 PUTS T1 HIT — " + _p(t1) + " | Remove ⅓, move SL to entry (" + _p(entry) + ")", alert.freq_once_per_bar_close)
+alert("TICKER:" + syminfo.ticker + " 🎯 PUTS T2 HIT — " + _p(t2) + " | Remove ⅓, trail stop", alert.freq_once_per_bar_close)
+alert("TICKER:" + syminfo.ticker + " ✅ PUTS T3 HIT — " + _p(t3) + " | Full exit", alert.freq_once_per_bar_close)
+alert("TICKER:" + syminfo.ticker + " 🛑 PUTS STOPPED OUT", alert.freq_once_per_bar_close)
+
+// ── HUD THRESHOLD FIX ────────────────────────────────────────
+// In the HUD section, find this line (around the CALL SCORE row):
+//   "need " + str.tostring(score_gate_bull_f)
+// and this line (PUT SCORE row):
+//   "need " + str.tostring(score_gate_bear_f)
+//
+// These already show the DYNAMIC gate score, which is correct.
+// The issue you saw ("need 7") was the dynamic score_gate_bull_f
+// resolving to 7 in that specific market context.
+//
+// To enforce a hard minimum display of 8, wrap it like this:
+//
+// FIND (in CALL SCORE cell):
+//   str.tostring(score_gate_bull_f)
+// REPLACE WITH:
+//   str.tostring(math.max(score_gate_bull_f, alert_min_score))
+//
+// FIND (in PUT SCORE cell):
+//   str.tostring(score_gate_bear_f)
+// REPLACE WITH:
+//   str.tostring(math.max(score_gate_bear_f, alert_min_score))
