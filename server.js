@@ -135,12 +135,10 @@ function extractTicker(text) {
   // Match TICKER:XXXX pattern first
   const m1 = text.match(/TICKER[:\s]+([A-Z0-9]{1,6})/i);
   if (m1) return m1[1];
-  // Match leading ticker at start of message e.g. "SPY ▲ ENTER CALLS"
-  const m2 = text.match(/^([A-Z]{1,6})\s+[▲▼⚡🚨]/);
+  // Match [15m], [60] style TF tags and grab word before them
+  const m2 = text.match(/\b([A-Z]{1,6})\s+\[(?:\d+m?|TF:)/i);
   if (m2) return m2[1];
-  // Fallback — first standalone uppercase word
-  const m3 = text.match(/\b([A-Z]{2,6})\b/);
-  return m3 ? m3[1] : 'UNKNOWN';
+  return 'UNKNOWN';
 }
 
 function extractTF(text) {
