@@ -282,7 +282,39 @@ function connect() {
   es.onmessage = (e) => {
     const data = JSON.parse(e.data);
     if (data.type==='init')  { allAlerts=data.alerts; renderAlerts(); updateStats(); updateTickerGrid(); }
-    else if (data.type==='alert') { allAlerts.unshift(data.alert); renderAlerts(); updateStats(); updateTickerGrid(); showToast(data.alert); playSound(data.alert); }
+    else if (data.type==='alert') {
+      // Re-parse client-side to catch GAP_TRADE / GAP_EXIT types the server doesn't know about
+      const srv = data.alert;
+      const raw = srv.raw || srv.message || '';
+      const parsed = raw ? parseAlert(raw) : {};
+      const alert = Object.assign({}, srv, {
+        id:        srv.id,
+        timestamp: srv.timestamp,
+        type:      parsed.type      || srv.type,
+        signal:    parsed.signal    || srv.signal,
+        ticker:    parsed.ticker    || srv.ticker,
+        timeframe: parsed.timeframe || srv.timeframe,
+        verdict:   parsed.verdict   || srv.verdict,
+        entry:     parsed.entry     || srv.entry || '',
+        sl:        parsed.sl        || srv.sl    || '',
+        t1:        parsed.t1        || srv.t1    || '',
+        t2:        parsed.t2        || srv.t2    || '',
+        t3:        parsed.t3        || srv.t3    || '',
+        raw:       raw,
+        // gap-specific fields
+        bias:        parsed.bias        || '',
+        biasTag:     parsed.biasTag     || '',
+        gapType:     parsed.gapType     || '',
+        gapSize:     parsed.gapSize     || '',
+        isCallsExit: parsed.isCallsExit || false,
+        score:       parsed.score       || srv.score || '',
+        quality:     parsed.quality     || srv.quality || '',
+        htf:         parsed.htf         || srv.htf    || '',
+        dte:         parsed.dte         || srv.dte     || '',
+      });
+      allAlerts.unshift(alert);
+      renderAlerts(); updateStats(); updateTickerGrid(); showToast(alert); playSound(alert);
+    }
     else if (data.type==='clear') { allAlerts=[]; renderAlerts(); updateStats(); updateTickerGrid(); }
   };
   es.onerror = () => { document.getElementById('liveStatus').className='live-dot disconnected'; document.getElementById('liveLabel').textContent='RECONNECTING'; setTimeout(connect,3000); };
@@ -325,7 +357,7 @@ function parseAlert(raw) {
     const ticker     = (r.match(/TICKER:([A-Z0-9]+)/) ||[])[1]||'—';
     const tf         = (r.match(/\[(\d+m)\]/)         ||[])[1]||'—';
     const gapSize    = (r.match(/Gap:\s*([\d.]+)/)    ||[])[1]||'—';
-    const gapType    = (r.match(/\(([A-Z]+)\)/)       ||[])[1]||'—';
+    const gapType    = (r.match(/Type:\s*([^|]+)/)    ||r.match(/\(([A-Z]+)\)/)||[])[1]?.trim()||'—';
     const isCallsExit = /EXIT CALLS/i.test(r);
     return {
       type:'GAP_EXIT', signal: isCallsExit?'PUTS':'CALLS',
@@ -701,7 +733,7 @@ async function sendTestAlert() {
     const bias=biases[Math.floor(Math.random()*biases.length)];
     const types=['SMALL','MEDIUM','LARGE','EXHAUSTION'];
     const gType=types[Math.floor(Math.random()*types.length)];
-    const ez=(+entry+(isCall?-+atr*0.3:+atr*0.3)).toFixed(2);
+    const ez=(parseFloat(entry)+(isCall?-parseFloat(atr)*0.3:parseFloat(atr)*0.3)).toFixed(2);
     message=`GAP TRADE — ${isCall?'▲ CALLS':'▼ PUTS'} [${tf}]`
       +` | TICKER:${ticker}`
       +` | Bias: ${bias}`
