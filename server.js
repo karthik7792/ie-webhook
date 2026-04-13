@@ -132,12 +132,21 @@ function extractField(text, field) {
 }
 
 function extractTicker(text) {
-  // Match TICKER:XXXX pattern first
+  // 1. Explicit TICKER:XXX pattern
   const m1 = text.match(/TICKER[:\s]+([A-Z0-9]{1,6})/i);
   if (m1) return m1[1];
-  // Match [15m], [60] style TF tags and grab word before them
-  const m2 = text.match(/\b([A-Z]{1,6})\s+\[(?:\d+m?|TF:)/i);
+  // 2. Arrow signal prefix e.g. "SPY ▲ ENTER CALLS"
+  const m2 = text.match(/^([A-Z]{1,6})\s+[▲▼⚡🚨]/);
   if (m2) return m2[1];
+  // 3. Word before timeframe tag e.g. "TSLA [5m]" — skip known signal words
+  const skipWords = ['PRICE','EMA','HIGH','LOW','BULL','BEAR','CALL','PUT','GAP','YDH','YDL','PWH','PWL','HTF','BOS','LIQ','SQZ'];
+  const m3 = text.match(/\b([A-Z]{1,6})\s+\[(?:\d+m?|TF:)/);
+  if (m3 && !skipWords.includes(m3[1])) return m3[1];
+  // 4. First uppercase word that isn't a known signal keyword
+  const words = text.match(/\b([A-Z]{2,6})\b/g) || [];
+  for (const w of words) {
+    if (!skipWords.includes(w)) return w;
+  }
   return 'UNKNOWN';
 }
 
@@ -160,6 +169,7 @@ function detectType(text) {
   if (/T1 HIT/i.test(text))         return 'T1_HIT';
   if (/T2 HIT/i.test(text))         return 'T2_HIT';
   if (/T3 HIT/i.test(text))         return 'T3_HIT';
+  if (/SIGNAL BLOCKED/i.test(text))  return 'BLOCKED';
   if (/STOPPED OUT/i.test(text))    return 'STOPPED';
   if (/BULL LIQ SWEEP/i.test(text)) return 'LIQ_BULL';
   if (/BEAR LIQ SWEEP/i.test(text)) return 'LIQ_BEAR';
