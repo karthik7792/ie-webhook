@@ -51,7 +51,7 @@
   .stat-pill.calls-stat .val { color: var(--calls); }
   .stat-pill.puts-stat  .val { color: var(--puts); }
   .stat-pill.last-stat  .val { color: var(--gold); }
-  .stat-pill.gap-stat   .val { color: var(--orange); } /* GAP TRADE patch */
+  .stat-pill.gap-stat   .val { color: var(--orange); }
 
   .filter-bar { display: flex; align-items: center; gap: 8px; padding: 12px 28px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .filter-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 2px; margin-right: 4px; }
@@ -61,7 +61,7 @@
   .filter-btn.active-puts   { border-color: var(--puts);   color: var(--puts);   background: rgba(255,23,68,0.07); }
   .filter-btn.active-all    { border-color: var(--cyan);   color: var(--cyan);   background: rgba(0,229,255,0.07); }
   .filter-btn.active-entry  { border-color: var(--gold);   color: var(--gold);   background: rgba(255,215,0,0.07); }
-  .filter-btn.active-gap    { border-color: var(--orange); color: var(--orange); background: rgba(255,152,0,0.07); } /* GAP TRADE patch */
+  .filter-btn.active-gap    { border-color: var(--orange); color: var(--orange); background: rgba(255,152,0,0.07); }
 
   .search-input { margin-left: auto; background: var(--bg2); border: 1px solid var(--border); color: var(--text); font-family: 'Share Tech Mono',monospace; font-size: 0.72rem; padding: 5px 14px; width: 160px; letter-spacing: 1px; outline: none; transition: border-color 0.2s; }
   .search-input::placeholder { color: var(--text-dim); }
@@ -103,8 +103,10 @@
   .alert-card.sig-STOPPED .card-stripe { background: var(--puts); }
   .alert-card.sig-T3_HIT  .card-stripe { background: var(--gold); }
   .alert-card.sig-GAP      .card-stripe { background: var(--orange); }
+  /* FIX: BLOCKED signal stripe */
+  .alert-card.sig-BLOCKED  .card-stripe { background: #ff6d00; }
 
-  /* GAP TRADE patch — stripe colors */
+  /* GAP TRADE stripe colors */
   .alert-card.sig-GAP_EXIT               .card-stripe { background: var(--puts); }
   .alert-card.sig-GAP_TRADE.dir-CALLS    .card-stripe { background: var(--calls); }
   .alert-card.sig-GAP_TRADE.dir-PUTS     .card-stripe { background: var(--puts); }
@@ -134,8 +136,10 @@
   .type-PWH, .type-YDH { background: var(--puts-dim);  color: #ff6d00; border: 1px solid #ff6d00; }
   .type-PWL, .type-YDL { background: var(--calls-dim); color: #00b0ff; border: 1px solid #00b0ff; }
   .type-INFO       { background: rgba(100,100,150,0.1); color: var(--text-dim); border: 1px solid var(--border2); }
+  /* FIX: BLOCKED signal type tag */
+  .type-BLOCKED    { background: rgba(255,109,0,0.12); color: #ff6d00; border: 1px solid #ff6d00; }
 
-  /* GAP TRADE patch — type tag styles */
+  /* GAP TRADE type tag styles */
   .type-GAP_EXIT          { background: rgba(255,23,68,0.15);  color: var(--puts);   border: 1px solid var(--puts); }
   .type-GAP_TRADE_CALLS   { background: rgba(0,230,118,0.1);   color: var(--calls);  border: 1px solid var(--calls); }
   .type-GAP_TRADE_PUTS    { background: rgba(255,23,68,0.1);   color: var(--puts);   border: 1px solid var(--puts); }
@@ -151,7 +155,7 @@
   .level-item.lv-t1    .lv-val { color: var(--gold); }
   .level-item.lv-t2    .lv-val { color: var(--orange); }
   .level-item.lv-t3    .lv-val { color: var(--calls); }
-  .level-item.lv-entry .lv-val { color: var(--cyan); } /* GAP TRADE patch */
+  .level-item.lv-entry .lv-val { color: var(--cyan); }
   .card-footer { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
   .ts       { font-size: 0.6rem; color: var(--text-dim); font-family: 'Share Tech Mono',monospace; letter-spacing: 1px; }
   .htf-badge { font-size: 0.6rem; font-family: 'Share Tech Mono',monospace; letter-spacing: 1px; }
@@ -170,14 +174,14 @@
   .detail-field.df-calls  .df-val { color: var(--calls); }
   .detail-field.df-puts   .df-val { color: var(--puts); }
   .detail-field.df-gold   .df-val { color: var(--gold); }
-  .detail-field.df-orange .df-val { color: var(--orange); } /* GAP TRADE patch */
+  .detail-field.df-orange .df-val { color: var(--orange); }
   .raw-msg { background: var(--bg); border: 1px solid var(--border); padding: 10px; font-family: 'Share Tech Mono',monospace; font-size: 0.65rem; color: var(--text-dim); line-height: 1.7; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto; }
 
   .ticker-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; }
   .ticker-cell { padding: 6px 4px; text-align: center; border: 1px solid var(--border); font-family: 'Orbitron',monospace; font-size: 0.6rem; letter-spacing: 1px; color: var(--text-dim); background: var(--bg); transition: all 0.2s; }
   .ticker-cell.has-calls { border-color: var(--calls);  color: var(--calls);  background: var(--calls-dim); }
   .ticker-cell.has-puts  { border-color: var(--puts);   color: var(--puts);   background: var(--puts-dim); }
-  .ticker-cell.has-gap   { border-color: var(--orange); color: var(--orange); background: rgba(255,152,0,0.1); } /* GAP TRADE patch */
+  .ticker-cell.has-gap   { border-color: var(--orange); color: var(--orange); background: rgba(255,152,0,0.1); }
 
   #toast { position: fixed; bottom: 28px; right: 28px; background: var(--bg3); border: 1px solid var(--border2); padding: 14px 20px; max-width: 320px; z-index: 9998; font-family: 'Share Tech Mono',monospace; font-size: 0.72rem; letter-spacing: 1px; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
   #toast.show { transform: translateY(0); opacity: 1; }
@@ -185,8 +189,8 @@
   #toast.toast-puts      { border-left: 3px solid var(--puts); }
   #toast.toast-gold      { border-left: 3px solid var(--gold); }
   #toast.toast-warn      { border-left: 3px solid var(--orange); }
-  #toast.toast-gap-exit  { border-left: 3px solid var(--puts); }   /* GAP TRADE patch */
-  #toast.toast-gap-trade { border-left: 3px solid var(--orange); } /* GAP TRADE patch */
+  #toast.toast-gap-exit  { border-left: 3px solid var(--puts); }
+  #toast.toast-gap-trade { border-left: 3px solid var(--orange); }
   .toast-ticker { font-family: 'Orbitron',monospace; font-size: 0.8rem; }
   .toast-body   { color: var(--text-dim); margin-top: 4px; }
   .sound-btn { background: none; border: 1px solid var(--border); cursor: pointer; color: var(--text-dim); font-size: 0.65rem; padding: 5px 10px; font-family: 'Share Tech Mono',monospace; letter-spacing: 1px; transition: all 0.2s; }
@@ -215,7 +219,7 @@
   <div class="stat-pill calls-stat"><span class="label">CALLS ENTRIES</span><span class="val" id="statCalls">0</span></div>
   <div class="stat-pill puts-stat"><span class="label">PUTS ENTRIES</span><span class="val" id="statPuts">0</span></div>
   <div class="stat-pill"><span class="label">T3 HITS</span><span class="val" id="statT3">0</span></div>
-  <div class="stat-pill gap-stat"><span class="label">GAP TRADES</span><span class="val" id="statGap">0</span></div><!-- GAP TRADE patch -->
+  <div class="stat-pill gap-stat"><span class="label">GAP TRADES</span><span class="val" id="statGap">0</span></div>
   <div class="stat-pill last-stat"><span class="label">LAST</span><span class="val" id="statLast">—</span></div>
 </div>
 
@@ -225,7 +229,7 @@
   <button class="filter-btn" onclick="setFilter('ENTRY_CALLS',this)">▲ CALLS ENTRY</button>
   <button class="filter-btn" onclick="setFilter('ENTRY_PUTS',this)">▼ PUTS ENTRY</button>
   <button class="filter-btn" onclick="setFilter('exits',this)">🎯 EXITS</button>
-  <button class="filter-btn" onclick="setFilter('gap_trade',this)">⚡ GAP TRADE</button><!-- GAP TRADE patch -->
+  <button class="filter-btn" onclick="setFilter('gap_trade',this)">⚡ GAP TRADE</button>
   <button class="filter-btn" onclick="setFilter('patterns',this)">📊 PATTERNS</button>
   <button class="filter-btn" onclick="setFilter('liquidity',this)">💧 LIQUIDITY</button>
   <button class="filter-btn" onclick="setFilter('warnings',this)">⚠ WARNINGS</button>
@@ -283,7 +287,6 @@ function connect() {
     const data = JSON.parse(e.data);
     if (data.type==='init')  { allAlerts=data.alerts; renderAlerts(); updateStats(); updateTickerGrid(); }
     else if (data.type==='alert') {
-      // Re-parse client-side to catch GAP_TRADE / GAP_EXIT types the server doesn't know about
       const srv = data.alert;
       const raw = srv.raw || srv.message || '';
       const parsed = raw ? parseAlert(raw) : {};
@@ -292,7 +295,12 @@ function connect() {
         timestamp: srv.timestamp,
         type:      parsed.type      || srv.type,
         signal:    parsed.signal    || srv.signal,
-        ticker:    parsed.ticker    || srv.ticker,
+        // FIX: prioritise server-extracted ticker — srv.ticker comes from
+        // the TICKER:SYMBOL regex the server runs on the original Pine message.
+        // parsed.ticker used to override it with 'LINE'/'BOTTOM'/'SIGNAL'
+        // because the fallback word-boundary regex grabbed junk from a
+        // pre-processed (TICKER:-stripped) message. Now srv wins.
+        ticker:    srv.ticker || parsed.ticker || '—',
         timeframe: parsed.timeframe || srv.timeframe,
         verdict:   parsed.verdict   || srv.verdict,
         entry:     parsed.entry     || srv.entry || '',
@@ -301,7 +309,6 @@ function connect() {
         t2:        parsed.t2        || srv.t2    || '',
         t3:        parsed.t3        || srv.t3    || '',
         raw:       raw,
-        // gap-specific fields
         bias:        parsed.bias        || '',
         biasTag:     parsed.biasTag     || '',
         gapType:     parsed.gapType     || '',
@@ -340,15 +347,20 @@ function matchesFilter(a) {
   if (currentFilter==='ENTRY_CALLS') return a.type==='ENTRY_CALLS';
   if (currentFilter==='ENTRY_PUTS')  return a.type==='ENTRY_PUTS';
   if (currentFilter==='exits')       return ['T1_HIT','T2_HIT','T3_HIT','STOPPED'].includes(a.type);
-  if (currentFilter==='gap_trade')   return ['GAP_TRADE','GAP_EXIT'].includes(a.type); // GAP TRADE patch
+  if (currentFilter==='gap_trade')   return ['GAP_TRADE','GAP_EXIT'].includes(a.type);
   if (currentFilter==='patterns')    return ['TRIPLE_TOP','DOUBLE_TOP','TRIPLE_BOT','DOUBLE_BOT','FAILED_BOS','THREE_LS','EMA_SQZ'].includes(a.type);
   if (currentFilter==='liquidity')   return ['LIQ_BULL','LIQ_BEAR'].includes(a.type);
-  if (currentFilter==='warnings')    return ['GAP','PWH','PWL','YDH','YDL'].includes(a.type);
+  if (currentFilter==='warnings')    return ['GAP','PWH','PWL','YDH','YDL','BLOCKED'].includes(a.type);
   return true;
 }
 
 // ── parseAlert ────────────────────────────────────────────────
-// GAP TRADE patch: handles GAP EXIT and GAP TRADE prefixes before standard parsing
+// FIX SUMMARY:
+//   - ticker fallback changed from '—' to '' so srv.ticker wins in merge
+//   - bad fallback regex /^([A-Z0-9]{1,6})\s/ REMOVED — it was capturing
+//     words like LINE/BOTTOM/SIGNAL from messages where the server had
+//     already stripped the TICKER:SYMBOL prefix
+//   - Added BLOCKED type for call/put signal blocked alerts
 function parseAlert(raw) {
   const r = raw || '';
 
@@ -389,8 +401,12 @@ function parseAlert(raw) {
     };
   }
 
-  // Standard parsing
-  const ticker = (r.match(/TICKER:([A-Z0-9]+)/)||r.match(/^([A-Z0-9]{1,6})\s/)||[])[1]||'—';
+  // ── Standard parsing ──────────────────────────────────────────
+  // FIX: REMOVED bad fallback regex /^([A-Z0-9]{1,6})\s/ — it grabbed
+  // words like LINE/BOTTOM/SIGNAL from pre-processed message bodies.
+  // Use '' so the merge falls back to srv.ticker (server value is reliable).
+  const ticker = (r.match(/TICKER:([A-Z0-9]+)/)||[])[1]||'';
+
   const tf     = (r.match(/\[TF:\s*([^\]]+)\]/)||r.match(/\[(\d+m)\]/)||[])[1]||'—';
   const entry  = (r.match(/Entry\s*:\s*([\d.]+)/i)||[])[1]||'';
   const sl     = (r.match(/SL\s*:\s*([\d.]+)/i)   ||[])[1]||'';
@@ -422,21 +438,24 @@ function parseAlert(raw) {
   else if (/DOUBLE BOTTOM/i.test(r))                       { type='DOUBLE_BOT'; signal='CALLS'; }
   else if (/FAILED BOS/i.test(r)) {
     type='FAILED_BOS'; signal=/PUTS/i.test(r)?'PUTS':'CALLS';
-    const fe=(r.match(/ENTRY\s*:\s*([\d.]+)/i)||[])[1]||'';
-    const fs=(r.match(/SL\s*:\s*([\d.]+)/i)||[])[1]||'';
-    const ft1=(r.match(/T1\s*:\s*([\d.]+)/i)||[])[1]||'';
-    const ft2=(r.match(/T2\s*:\s*([\d.]+)/i)||[])[1]||'';
-    const ft3=(r.match(/T3\s*:\s*([\d.]+)/i)||[])[1]||'';
+    // Use ENTRY/SL/T1-T3 labels from the multi-line FBOS alert body
+    const fe  = (r.match(/ENTRY\s*:\s*([\d.]+)/i)||[])[1]||'';
+    const fs  = (r.match(/SL\s*:\s*([\d.]+)/i)   ||[])[1]||'';
+    const ft1 = (r.match(/T1\s*:\s*([\d.]+)/i)   ||[])[1]||'';
+    const ft2 = (r.match(/T2\s*:\s*([\d.]+)/i)   ||[])[1]||'';
+    const ft3 = (r.match(/T3\s*:\s*([\d.]+)/i)   ||[])[1]||'';
     const lines2=r.split('\n').map(l=>l.trim()).filter(Boolean);
     return {type,signal,ticker,timeframe:tf,verdict:lines2[0]||'',raw:r,entry:fe,sl:fs,t1:ft1,t2:ft2,t3:ft3};
   }
-  else if (/3-LINE STRIKE/i.test(r))    { type='THREE_LS'; signal=/PUTS/i.test(r)?'PUTS':'CALLS'; }
+  else if (/3-LINE STRIKE/i.test(r))      { type='THREE_LS'; signal=/PUTS/i.test(r)?'PUTS':'CALLS'; }
   else if (/EMA SQUEEZE BREAKOUT/i.test(r)){ type='EMA_SQZ'; signal=/▼|BEAR/i.test(r)?'PUTS':'CALLS'; }
-  else if (/GAP OPEN/i.test(r))         { type='GAP'; }
-  else if (/PRICE NEAR PWH/i.test(r))   { type='PWH'; }
-  else if (/PRICE NEAR PWL/i.test(r))   { type='PWL'; }
-  else if (/PRICE NEAR YDH/i.test(r))   { type='YDH'; }
-  else if (/PRICE NEAR YDL/i.test(r))   { type='YDL'; }
+  // FIX: added BLOCKED type — previously fell through to INFO, showing generic 'ℹ INFO' tag
+  else if (/SIGNAL BLOCKED/i.test(r))      { type='BLOCKED'; signal='NEUTRAL'; }
+  else if (/GAP OPEN/i.test(r))           { type='GAP'; }
+  else if (/PRICE NEAR PWH/i.test(r))     { type='PWH'; }
+  else if (/PRICE NEAR PWL/i.test(r))     { type='PWL'; }
+  else if (/PRICE NEAR YDH/i.test(r))     { type='YDH'; }
+  else if (/PRICE NEAR YDL/i.test(r))     { type='YDL'; }
   else if (/FLIP.*CLOSING CALLS.*OPENING PUTS/i.test(r)) { type='ENTRY_PUTS';  signal='PUTS'; }
   else if (/FLIP.*CLOSING PUTS.*OPENING CALLS/i.test(r)) { type='ENTRY_CALLS'; signal='CALLS'; }
 
@@ -529,7 +548,7 @@ function cardHTML(a) {
     </div>`;
   }
 
-  // FAILED BOS card
+  // FAILED BOS card — rich level display
   if (a.type==='FAILED_BOS' && a.entry && a.sl && a.t1) {
     const isPuts=a.signal==='PUTS';
     const bc=isPuts?'var(--puts)':'var(--calls)';
@@ -556,7 +575,7 @@ function cardHTML(a) {
     </div>`;
   }
 
-  // Standard card
+  // Standard card (ENTRY, T-hits, STOPS, LIQ, PATTERNS, BLOCKED, etc.)
   const lvls=[];
   if(a.entry) lvls.push(`<span class="level-item lv-entry"><span class="lv-label">ENTRY</span><span class="lv-val">${a.entry}</span></span>`);
   if(a.sl)    lvls.push(`<span class="level-item lv-sl"><span class="lv-label">SL</span><span class="lv-val">${a.sl}</span></span>`);
@@ -590,7 +609,8 @@ function typeLabel(t) {
     TRIPLE_TOP:'🔴 TRIPLE TOP',DOUBLE_TOP:'🔴 DOUBLE TOP',TRIPLE_BOT:'🟢 TRIPLE BOT',DOUBLE_BOT:'🟢 DOUBLE BOT',
     FAILED_BOS:'❌ FAILED BOS',THREE_LS:'⚡ 3-LINE STRIKE',EMA_SQZ:'⚡ EMA SQZ',
     GAP:'⚠ GAP OPEN',PWH:'⚠ PWH',PWL:'⚠ PWL',YDH:'⚠ YDH',YDL:'⚠ YDL',
-    GAP_EXIT:'🚨 GAP EXIT',GAP_TRADE:'⚡ GAP TRADE', // GAP TRADE patch
+    BLOCKED:'🚫 BLOCKED',      // FIX: was falling through to 'ℹ INFO'
+    GAP_EXIT:'🚨 GAP EXIT',GAP_TRADE:'⚡ GAP TRADE',
     INFO:'ℹ INFO'
   }[t]||t;
 }
@@ -608,7 +628,6 @@ function selectAlert(id) {
   const card=document.querySelector(`[data-id="${id}"]`); if(card) card.classList.add('selected');
   const isCall=a.signal==='CALLS', isPut=a.signal==='PUTS';
 
-  // GAP TRADE patch — extra fields for gap alerts
   const gapFields=(a.type==='GAP_TRADE'||a.type==='GAP_EXIT')?`
     ${a.bias?`<div class="detail-field df-orange"><span class="df-label">BIAS</span><span class="df-val">${a.bias}</span></div>`:''}
     ${a.gapType?`<div class="detail-field"><span class="df-label">GAP TYPE</span><span class="df-val">${a.gapType}</span></div>`:''}
@@ -639,7 +658,7 @@ function updateStats() {
   document.getElementById('statCalls').textContent=allAlerts.filter(a=>a.type==='ENTRY_CALLS').length;
   document.getElementById('statPuts').textContent =allAlerts.filter(a=>a.type==='ENTRY_PUTS').length;
   document.getElementById('statT3').textContent   =allAlerts.filter(a=>a.type==='T3_HIT').length;
-  document.getElementById('statGap').textContent  =allAlerts.filter(a=>['GAP_TRADE','GAP_EXIT'].includes(a.type)).length; // GAP TRADE patch
+  document.getElementById('statGap').textContent  =allAlerts.filter(a=>['GAP_TRADE','GAP_EXIT'].includes(a.type)).length;
   if(allAlerts.length) document.getElementById('statLast').textContent=`${allAlerts[0].ticker} ${formatTime(allAlerts[0].timestamp)}`;
 }
 
@@ -650,7 +669,7 @@ function updateTickerGrid() {
     const ta=recent.filter(a=>a.ticker===t);
     const hasCalls=ta.some(a=>a.signal==='CALLS'&&['ENTRY_CALLS','LIQ_BULL','TRIPLE_BOT','DOUBLE_BOT','GAP_TRADE'].includes(a.type));
     const hasPuts =ta.some(a=>a.signal==='PUTS' &&['ENTRY_PUTS','LIQ_BEAR','TRIPLE_TOP','DOUBLE_TOP','GAP_TRADE'].includes(a.type));
-    const hasGap  =ta.some(a=>a.type==='GAP_EXIT'); // GAP TRADE patch — orange for exit warning
+    const hasGap  =ta.some(a=>a.type==='GAP_EXIT');
     const cls=hasCalls?'has-calls':hasPuts?'has-puts':hasGap?'has-gap':'';
     return `<div class="ticker-cell ${cls}">${t}</div>`;
   }).join('');
@@ -666,8 +685,8 @@ function showToast(a) {
     a.type==='ENTRY_CALLS'?'toast-calls':
     a.type==='ENTRY_PUTS' ?'toast-puts':
     a.type==='T3_HIT'     ?'toast-gold':
-    a.type==='GAP_EXIT'   ?'toast-gap-exit':   // GAP TRADE patch
-    a.type==='GAP_TRADE'  ?'toast-gap-trade':  // GAP TRADE patch
+    a.type==='GAP_EXIT'   ?'toast-gap-exit':
+    a.type==='GAP_TRADE'  ?'toast-gap-trade':
     'toast-warn'
   );
   if(toastTimer) clearTimeout(toastTimer);
@@ -691,7 +710,6 @@ function playSound(a) {
   if      (a.type==='ENTRY_CALLS') { osc.frequency.setValueAtTime(880,now);  osc.frequency.setValueAtTime(1100,now+0.1); }
   else if (a.type==='ENTRY_PUTS')  { osc.frequency.setValueAtTime(660,now);  osc.frequency.setValueAtTime(440,now+0.1); }
   else if (a.type==='T3_HIT')      { osc.frequency.setValueAtTime(880,now);  osc.frequency.setValueAtTime(1320,now+0.1); osc.frequency.setValueAtTime(1760,now+0.2); }
-  // GAP TRADE patch — urgent descending for EXIT, rising double-beep for TRADE entry
   else if (a.type==='GAP_EXIT')    { osc.frequency.setValueAtTime(1200,now); osc.frequency.setValueAtTime(600,now+0.15); osc.frequency.setValueAtTime(300,now+0.3); }
   else if (a.type==='GAP_TRADE')   { osc.frequency.setValueAtTime(660,now);  osc.frequency.setValueAtTime(880,now+0.12); }
   else                             { osc.frequency.setValueAtTime(440,now); }
@@ -719,7 +737,6 @@ async function sendTestAlert() {
   let message;
 
   if (roll<0.12) {
-    // GAP EXIT test
     const exitDir=isCall?'CALLS':'PUTS';
     const gapDir=isCall?'DOWN ▼':'UP ▲';
     message=`GAP EXIT — 🚨 EXIT ${exitDir} — GAP ${gapDir} AGAINST POSITION [${tf}]`
@@ -728,10 +745,9 @@ async function sendTestAlert() {
       +` | Your ${exitDir.toLowerCase()} SL already breached at open — EXIT NOW`
       +` | Watch for ${isCall?'puts':'calls'} setup after suppression lifts`;
   } else if (roll<0.25) {
-    // GAP TRADE entry test
     const biases=['GAP & GO','GAP FILL','FADE'];
     const bias=biases[Math.floor(Math.random()*biases.length)];
-    const types=['SMALL','MEDIUM','LARGE','EXHAUSTION'];
+    const types=['MEDIUM','LARGE','EXHAUSTION'];
     const gType=types[Math.floor(Math.random()*types.length)];
     const ez=(parseFloat(entry)+(isCall?-parseFloat(atr)*0.3:parseFloat(atr)*0.3)).toFixed(2);
     message=`GAP TRADE — ${isCall?'▲ CALLS':'▼ PUTS'} [${tf}]`
