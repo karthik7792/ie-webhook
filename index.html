@@ -52,6 +52,7 @@
   .stat-pill.puts-stat  .val { color: var(--puts); }
   .stat-pill.last-stat  .val { color: var(--gold); }
   .stat-pill.gap-stat   .val { color: var(--orange); }
+  .stat-pill.ob-stat    .val { color: #00b0ff; }
 
   .filter-bar { display: flex; align-items: center; gap: 8px; padding: 12px 28px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .filter-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 2px; margin-right: 4px; }
@@ -62,6 +63,7 @@
   .filter-btn.active-all    { border-color: var(--cyan);   color: var(--cyan);   background: rgba(0,229,255,0.07); }
   .filter-btn.active-entry  { border-color: var(--gold);   color: var(--gold);   background: rgba(255,215,0,0.07); }
   .filter-btn.active-gap    { border-color: var(--orange); color: var(--orange); background: rgba(255,152,0,0.07); }
+  .filter-btn.active-ob     { border-color: #00b0ff;       color: #00b0ff;       background: rgba(0,176,255,0.07); }
 
   .search-input { margin-left: auto; background: var(--bg2); border: 1px solid var(--border); color: var(--text); font-family: 'Share Tech Mono',monospace; font-size: 0.72rem; padding: 5px 14px; width: 160px; letter-spacing: 1px; outline: none; transition: border-color 0.2s; }
   .search-input::placeholder { color: var(--text-dim); }
@@ -103,14 +105,14 @@
   .alert-card.sig-STOPPED .card-stripe { background: var(--puts); }
   .alert-card.sig-T3_HIT  .card-stripe { background: var(--gold); }
   .alert-card.sig-GAP      .card-stripe { background: var(--orange); }
-  /* FIX: BLOCKED signal stripe */
   .alert-card.sig-BLOCKED  .card-stripe { background: #ff6d00; }
-
-  /* GAP TRADE stripe colors */
   .alert-card.sig-GAP_EXIT               .card-stripe { background: var(--puts); }
   .alert-card.sig-GAP_TRADE.dir-CALLS    .card-stripe { background: var(--calls); }
   .alert-card.sig-GAP_TRADE.dir-PUTS     .card-stripe { background: var(--puts); }
   .alert-card.sig-GAP_TRADE.dir-NEUTRAL  .card-stripe { background: var(--orange); }
+  /* OB state change stripes */
+  .alert-card.sig-OB_CLEARED .card-stripe { background: var(--calls); }
+  .alert-card.sig-OB_BROKEN  .card-stripe { background: var(--puts); }
 
   .card-body { padding: 10px 14px 10px 0; }
   .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
@@ -133,17 +135,15 @@
   .type-THREE_LS   { background: rgba(206,147,216,0.1); color: var(--purple); border: 1px solid var(--purple); }
   .type-EMA_SQZ    { background: rgba(255,215,0,0.1);   color: var(--gold);   border: 1px solid var(--gold); }
   .type-GAP        { background: rgba(255,152,0,0.1);   color: var(--orange); border: 1px solid var(--orange); }
-  .type-PWH, .type-YDH { background: var(--puts-dim);  color: #ff6d00; border: 1px solid #ff6d00; }
-  .type-PWL, .type-YDL { background: var(--calls-dim); color: #00b0ff; border: 1px solid #00b0ff; }
   .type-INFO       { background: rgba(100,100,150,0.1); color: var(--text-dim); border: 1px solid var(--border2); }
-  /* FIX: BLOCKED signal type tag */
   .type-BLOCKED    { background: rgba(255,109,0,0.12); color: #ff6d00; border: 1px solid #ff6d00; }
-
-  /* GAP TRADE type tag styles */
   .type-GAP_EXIT          { background: rgba(255,23,68,0.15);  color: var(--puts);   border: 1px solid var(--puts); }
   .type-GAP_TRADE_CALLS   { background: rgba(0,230,118,0.1);   color: var(--calls);  border: 1px solid var(--calls); }
   .type-GAP_TRADE_PUTS    { background: rgba(255,23,68,0.1);   color: var(--puts);   border: 1px solid var(--puts); }
   .type-GAP_TRADE_NEUTRAL { background: rgba(255,152,0,0.1);   color: var(--orange); border: 1px solid var(--orange); }
+  /* OB state change type tags */
+  .type-OB_CLEARED { background: rgba(0,230,118,0.1);  color: var(--calls); border: 1px solid var(--calls); }
+  .type-OB_BROKEN  { background: rgba(255,23,68,0.1);  color: var(--puts);  border: 1px solid var(--puts); }
 
   .score-stars { margin-left: auto; font-size: 0.65rem; color: var(--gold); letter-spacing: 1px; }
   .card-verdict { font-size: 0.75rem; color: var(--text); margin-bottom: 5px; line-height: 1.4; font-family: 'Share Tech Mono',monospace; }
@@ -191,6 +191,8 @@
   #toast.toast-warn      { border-left: 3px solid var(--orange); }
   #toast.toast-gap-exit  { border-left: 3px solid var(--puts); }
   #toast.toast-gap-trade { border-left: 3px solid var(--orange); }
+  #toast.toast-ob-clear  { border-left: 3px solid var(--calls); }
+  #toast.toast-ob-break  { border-left: 3px solid var(--puts); }
   .toast-ticker { font-family: 'Orbitron',monospace; font-size: 0.8rem; }
   .toast-body   { color: var(--text-dim); margin-top: 4px; }
   .sound-btn { background: none; border: 1px solid var(--border); cursor: pointer; color: var(--text-dim); font-size: 0.65rem; padding: 5px 10px; font-family: 'Share Tech Mono',monospace; letter-spacing: 1px; transition: all 0.2s; }
@@ -220,6 +222,7 @@
   <div class="stat-pill puts-stat"><span class="label">PUTS ENTRIES</span><span class="val" id="statPuts">0</span></div>
   <div class="stat-pill"><span class="label">T3 HITS</span><span class="val" id="statT3">0</span></div>
   <div class="stat-pill gap-stat"><span class="label">GAP TRADES</span><span class="val" id="statGap">0</span></div>
+  <div class="stat-pill ob-stat"><span class="label">OB EVENTS</span><span class="val" id="statOB">0</span></div>
   <div class="stat-pill last-stat"><span class="label">LAST</span><span class="val" id="statLast">—</span></div>
 </div>
 
@@ -232,7 +235,7 @@
   <button class="filter-btn" onclick="setFilter('gap_trade',this)">⚡ GAP TRADE</button>
   <button class="filter-btn" onclick="setFilter('patterns',this)">📊 PATTERNS</button>
   <button class="filter-btn" onclick="setFilter('liquidity',this)">💧 LIQUIDITY</button>
-  <button class="filter-btn" onclick="setFilter('warnings',this)">⚠ WARNINGS</button>
+  <button class="filter-btn" onclick="setFilter('ob_events',this)">📦 OB EVENTS</button>
   <input class="search-input" id="searchInput" placeholder="SEARCH TICKER..." oninput="renderAlerts()"/>
 </div>
 
@@ -295,11 +298,6 @@ function connect() {
         timestamp: srv.timestamp,
         type:      parsed.type      || srv.type,
         signal:    parsed.signal    || srv.signal,
-        // FIX: prioritise server-extracted ticker — srv.ticker comes from
-        // the TICKER:SYMBOL regex the server runs on the original Pine message.
-        // parsed.ticker used to override it with 'LINE'/'BOTTOM'/'SIGNAL'
-        // because the fallback word-boundary regex grabbed junk from a
-        // pre-processed (TICKER:-stripped) message. Now srv wins.
         ticker:    srv.ticker || parsed.ticker || '—',
         timeframe: parsed.timeframe || srv.timeframe,
         verdict:   parsed.verdict   || srv.verdict,
@@ -318,6 +316,8 @@ function connect() {
         quality:     parsed.quality     || srv.quality || '',
         htf:         parsed.htf         || srv.htf    || '',
         dte:         parsed.dte         || srv.dte     || '',
+        obLevel:     parsed.obLevel     || '',
+        obBias:      parsed.obBias      || '',
       });
       allAlerts.unshift(alert);
       renderAlerts(); updateStats(); updateTickerGrid(); showToast(alert); playSound(alert);
@@ -336,6 +336,7 @@ function setFilter(f, btn) {
   else if (f==='ENTRY_CALLS') btn.className='filter-btn active-calls';
   else if (f==='ENTRY_PUTS')  btn.className='filter-btn active-puts';
   else if (f==='gap_trade')   btn.className='filter-btn active-gap';
+  else if (f==='ob_events')   btn.className='filter-btn active-ob';
   else                        btn.className='filter-btn active-entry';
   renderAlerts();
 }
@@ -350,26 +351,20 @@ function matchesFilter(a) {
   if (currentFilter==='gap_trade')   return ['GAP_TRADE','GAP_EXIT'].includes(a.type);
   if (currentFilter==='patterns')    return ['TRIPLE_TOP','DOUBLE_TOP','TRIPLE_BOT','DOUBLE_BOT','FAILED_BOS','THREE_LS','EMA_SQZ'].includes(a.type);
   if (currentFilter==='liquidity')   return ['LIQ_BULL','LIQ_BEAR'].includes(a.type);
-  if (currentFilter==='warnings')    return ['GAP','PWH','PWL','YDH','YDL','BLOCKED'].includes(a.type);
+  if (currentFilter==='ob_events')   return ['OB_CLEARED','OB_BROKEN'].includes(a.type);
   return true;
 }
 
 // ── parseAlert ────────────────────────────────────────────────
-// FIX SUMMARY:
-//   - ticker fallback changed from '—' to '' so srv.ticker wins in merge
-//   - bad fallback regex /^([A-Z0-9]{1,6})\s/ REMOVED — it was capturing
-//     words like LINE/BOTTOM/SIGNAL from messages where the server had
-//     already stripped the TICKER:SYMBOL prefix
-//   - Added BLOCKED type for call/put signal blocked alerts
 function parseAlert(raw) {
   const r = raw || '';
 
-  // GAP EXIT — fires at open when gap is against active trade
+  // GAP EXIT
   if (r.startsWith('GAP EXIT')) {
     const ticker     = (r.match(/TICKER:([A-Z0-9]+)/) ||[])[1]||'—';
     const tf         = (r.match(/\[(\d+m)\]/)         ||[])[1]||'—';
     const gapSize    = (r.match(/Gap:\s*([\d.]+)/)    ||[])[1]||'—';
-    const gapType    = (r.match(/Type:\s*([^|]+)/)    ||r.match(/\(([A-Z]+)\)/)||[])[1]?.trim()||'—';
+    const gapType    = (r.match(/\(([A-Z]+)\)/)       ||[])[1]?.trim()||'—';
     const isCallsExit = /EXIT CALLS/i.test(r);
     return {
       type:'GAP_EXIT', signal: isCallsExit?'PUTS':'CALLS',
@@ -380,7 +375,7 @@ function parseAlert(raw) {
     };
   }
 
-  // GAP TRADE — post-suppression entry alert
+  // GAP TRADE
   if (r.startsWith('GAP TRADE')) {
     const ticker    = (r.match(/TICKER:([A-Z0-9]+)/)     ||[])[1]||'—';
     const tf        = (r.match(/\[(\d+m)\]/)             ||[])[1]||'—';
@@ -402,11 +397,7 @@ function parseAlert(raw) {
   }
 
   // ── Standard parsing ──────────────────────────────────────────
-  // FIX: REMOVED bad fallback regex /^([A-Z0-9]{1,6})\s/ — it grabbed
-  // words like LINE/BOTTOM/SIGNAL from pre-processed message bodies.
-  // Use '' so the merge falls back to srv.ticker (server value is reliable).
   const ticker = (r.match(/TICKER:([A-Z0-9]+)/)||[])[1]||'';
-
   const tf     = (r.match(/\[TF:\s*([^\]]+)\]/)||r.match(/\[(\d+m)\]/)||[])[1]||'—';
   const entry  = (r.match(/Entry\s*:\s*([\d.]+)/i)||[])[1]||'';
   const sl     = (r.match(/SL\s*:\s*([\d.]+)/i)   ||[])[1]||'';
@@ -420,6 +411,29 @@ function parseAlert(raw) {
   const dte    = (r.match(/(\[5DTE\]|\[BIWK\])/i)||[])[1]||'';
 
   let type='INFO', signal='NEUTRAL';
+
+  // ── OB state changes (NEW — replaces YDH/YDL/PWH/PWL warnings) ──
+  if (/OB CLEARED/i.test(r)) {
+    const level = (r.match(/Level:\s*([\d.]+)/i)||[])[1]||'';
+    return {
+      type:'OB_CLEARED', signal:'CALLS', ticker, timeframe:tf,
+      obLevel: level,
+      obBias: 'Calls bias — retest as support',
+      verdict: `✅ Bull OB cleared → now Support zone at ${level} | Watch for retest calls entry`,
+      raw:r
+    };
+  }
+  if (/OB BROKEN/i.test(r)) {
+    const level = (r.match(/Level:\s*([\d.]+)/i)||[])[1]||'';
+    return {
+      type:'OB_BROKEN', signal:'PUTS', ticker, timeframe:tf,
+      obLevel: level,
+      obBias: 'Puts bias — retest as resistance',
+      verdict: `🔴 Bear OB broken → now Resistance zone at ${level} | Watch for retest puts entry`,
+      raw:r
+    };
+  }
+
   if      (/ENTER CALLS/i.test(r))                         { type='ENTRY_CALLS'; signal='CALLS'; }
   else if (/ENTER PUTS/i.test(r))                          { type='ENTRY_PUTS';  signal='PUTS'; }
   else if (/CALLS T1 HIT|🎯 CALLS T1/i.test(r))           { type='T1_HIT'; signal='CALLS'; }
@@ -438,7 +452,6 @@ function parseAlert(raw) {
   else if (/DOUBLE BOTTOM/i.test(r))                       { type='DOUBLE_BOT'; signal='CALLS'; }
   else if (/FAILED BOS/i.test(r)) {
     type='FAILED_BOS'; signal=/PUTS/i.test(r)?'PUTS':'CALLS';
-    // Use ENTRY/SL/T1-T3 labels from the multi-line FBOS alert body
     const fe  = (r.match(/ENTRY\s*:\s*([\d.]+)/i)||[])[1]||'';
     const fs  = (r.match(/SL\s*:\s*([\d.]+)/i)   ||[])[1]||'';
     const ft1 = (r.match(/T1\s*:\s*([\d.]+)/i)   ||[])[1]||'';
@@ -447,17 +460,14 @@ function parseAlert(raw) {
     const lines2=r.split('\n').map(l=>l.trim()).filter(Boolean);
     return {type,signal,ticker,timeframe:tf,verdict:lines2[0]||'',raw:r,entry:fe,sl:fs,t1:ft1,t2:ft2,t3:ft3};
   }
-  else if (/3-LINE STRIKE/i.test(r))      { type='THREE_LS'; signal=/PUTS/i.test(r)?'PUTS':'CALLS'; }
-  else if (/EMA SQUEEZE BREAKOUT/i.test(r)){ type='EMA_SQZ'; signal=/▼|BEAR/i.test(r)?'PUTS':'CALLS'; }
-  // FIX: added BLOCKED type — previously fell through to INFO, showing generic 'ℹ INFO' tag
-  else if (/SIGNAL BLOCKED/i.test(r))      { type='BLOCKED'; signal='NEUTRAL'; }
-  else if (/GAP OPEN/i.test(r))           { type='GAP'; }
-  else if (/PRICE NEAR PWH/i.test(r))     { type='PWH'; }
-  else if (/PRICE NEAR PWL/i.test(r))     { type='PWL'; }
-  else if (/PRICE NEAR YDH/i.test(r))     { type='YDH'; }
-  else if (/PRICE NEAR YDL/i.test(r))     { type='YDL'; }
-  else if (/FLIP.*CLOSING CALLS.*OPENING PUTS/i.test(r)) { type='ENTRY_PUTS';  signal='PUTS'; }
-  else if (/FLIP.*CLOSING PUTS.*OPENING CALLS/i.test(r)) { type='ENTRY_CALLS'; signal='CALLS'; }
+  else if (/3-LINE STRIKE/i.test(r))       { type='THREE_LS'; signal=/PUTS/i.test(r)?'PUTS':'CALLS'; }
+  else if (/EMA SQUEEZE BREAKOUT/i.test(r)){ type='EMA_SQZ';  signal=/▼|BEAR/i.test(r)?'PUTS':'CALLS'; }
+  else if (/SIGNAL BLOCKED/i.test(r))      { type='BLOCKED';  signal='NEUTRAL'; }
+  else if (/GAP OPEN/i.test(r))            { type='GAP'; }
+  else if (/FLIP.*CLOSING CALLS.*OPENING PUTS/i.test(r))  { type='ENTRY_PUTS';  signal='PUTS'; }
+  else if (/FLIP.*CLOSING PUTS.*OPENING CALLS/i.test(r))  { type='ENTRY_CALLS'; signal='CALLS'; }
+  // Suppress YDH/YDL/PWH/PWL — no longer shown in feed
+  else if (/PRICE NEAR (YDH|YDL|PWH|PWL)/i.test(r))      { return null; }
 
   const lines=r.split('\n').map(l=>l.trim()).filter(Boolean);
   const verdict=lines[0]?lines[0].substring(0,140):r.substring(0,140);
@@ -467,7 +477,8 @@ function parseAlert(raw) {
 // ── Render ────────────────────────────────────────────────────
 function renderAlerts() {
   const feed     = document.getElementById('feed');
-  const filtered = allAlerts.filter(matchesFilter);
+  // Filter out null (suppressed) alerts
+  const filtered = allAlerts.filter(a => a && matchesFilter(a));
   if (!filtered.length) {
     feed.innerHTML=`<div class="feed-empty"><div class="empty-icon">📡</div>
       <p>${allAlerts.length===0?'AWAITING SIGNALS<br/>FROM TRADINGVIEW':'NO ALERTS MATCH FILTER'}</p>
@@ -483,9 +494,10 @@ function renderAlerts() {
 
 // ── cardHTML ──────────────────────────────────────────────────
 function cardHTML(a) {
+  if (!a) return '';
   const t = formatTime(a.timestamp);
 
-  // GAP EXIT card — urgent red
+  // GAP EXIT card
   if (a.type==='GAP_EXIT') {
     const ac  = 'var(--puts)';
     const ndc = a.isCallsExit?'var(--calls)':'var(--puts)';
@@ -516,7 +528,7 @@ function cardHTML(a) {
     </div>`;
   }
 
-  // GAP TRADE entry card
+  // GAP TRADE card
   if (a.type==='GAP_TRADE') {
     const isCalls   = a.signal==='CALLS';
     const ac        = isCalls?'var(--calls)':a.signal==='PUTS'?'var(--puts)':'var(--orange)';
@@ -548,7 +560,63 @@ function cardHTML(a) {
     </div>`;
   }
 
-  // FAILED BOS card — rich level display
+  // OB CLEARED card (bull OB price broke above — now support)
+  if (a.type==='OB_CLEARED') {
+    return `<div class="alert-card sig-OB_CLEARED dir-CALLS" data-id="${a.id}">
+      <div class="card-stripe"></div>
+      <div class="card-body" style="padding:10px 14px 10px 0">
+        <div class="card-top" style="margin-bottom:8px">
+          <span class="ticker-badge" style="color:var(--calls)">${a.ticker}</span>
+          <span class="tf-tag">${a.timeframe}</span>
+          <span class="type-tag type-OB_CLEARED">✅ OB CLEARED</span>
+          <span class="ts" style="margin-left:auto">${t}</span>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;line-height:2.2">
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:0 12px">
+            <span style="color:var(--text-dim)">STATUS</span>
+            <span style="color:var(--calls);font-weight:700">Bull OB → Support Zone</span>
+            <span style="color:var(--text-dim)">LEVEL</span>
+            <span style="color:var(--cyan)">${a.obLevel||'—'}</span>
+            <span style="color:var(--text-dim)">BIAS</span>
+            <span style="color:var(--calls)">Calls bias — watch for retest entry</span>
+            <span style="color:var(--text-dim)">ACTION</span>
+            <span style="color:var(--text)">Price broke above OB top. If price retests and holds this zone, it's a calls setup.</span>
+          </div>
+        </div>
+        <div class="card-footer"><span class="ts">${t}</span></div>
+      </div>
+    </div>`;
+  }
+
+  // OB BROKEN card (bear OB price broke below — now resistance)
+  if (a.type==='OB_BROKEN') {
+    return `<div class="alert-card sig-OB_BROKEN dir-PUTS" data-id="${a.id}">
+      <div class="card-stripe"></div>
+      <div class="card-body" style="padding:10px 14px 10px 0">
+        <div class="card-top" style="margin-bottom:8px">
+          <span class="ticker-badge" style="color:var(--puts)">${a.ticker}</span>
+          <span class="tf-tag">${a.timeframe}</span>
+          <span class="type-tag type-OB_BROKEN">🔴 OB BROKEN</span>
+          <span class="ts" style="margin-left:auto">${t}</span>
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;line-height:2.2">
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:0 12px">
+            <span style="color:var(--text-dim)">STATUS</span>
+            <span style="color:var(--puts);font-weight:700">Bear OB → Resistance Zone</span>
+            <span style="color:var(--text-dim)">LEVEL</span>
+            <span style="color:var(--cyan)">${a.obLevel||'—'}</span>
+            <span style="color:var(--text-dim)">BIAS</span>
+            <span style="color:var(--puts)">Puts bias — watch for retest entry</span>
+            <span style="color:var(--text-dim)">ACTION</span>
+            <span style="color:var(--text)">Price broke below OB bottom. If price retests and rejects this zone, it's a puts setup.</span>
+          </div>
+        </div>
+        <div class="card-footer"><span class="ts">${t}</span></div>
+      </div>
+    </div>`;
+  }
+
+  // FAILED BOS card
   if (a.type==='FAILED_BOS' && a.entry && a.sl && a.t1) {
     const isPuts=a.signal==='PUTS';
     const bc=isPuts?'var(--puts)':'var(--calls)';
@@ -575,7 +643,7 @@ function cardHTML(a) {
     </div>`;
   }
 
-  // Standard card (ENTRY, T-hits, STOPS, LIQ, PATTERNS, BLOCKED, etc.)
+  // Standard card
   const lvls=[];
   if(a.entry) lvls.push(`<span class="level-item lv-entry"><span class="lv-label">ENTRY</span><span class="lv-val">${a.entry}</span></span>`);
   if(a.sl)    lvls.push(`<span class="level-item lv-sl"><span class="lv-label">SL</span><span class="lv-val">${a.sl}</span></span>`);
@@ -603,14 +671,16 @@ function cardHTML(a) {
 
 function typeLabel(t) {
   return {
-    ENTRY_CALLS:'▲ ENTER CALLS',ENTRY_PUTS:'▼ ENTER PUTS',
-    T1_HIT:'🎯 T1 HIT',T2_HIT:'🎯 T2 HIT',T3_HIT:'✅ T3 HIT',STOPPED:'🛑 STOPPED',
-    LIQ_BULL:'💧 BULL LIQ',LIQ_BEAR:'💧 BEAR LIQ',
-    TRIPLE_TOP:'🔴 TRIPLE TOP',DOUBLE_TOP:'🔴 DOUBLE TOP',TRIPLE_BOT:'🟢 TRIPLE BOT',DOUBLE_BOT:'🟢 DOUBLE BOT',
-    FAILED_BOS:'❌ FAILED BOS',THREE_LS:'⚡ 3-LINE STRIKE',EMA_SQZ:'⚡ EMA SQZ',
-    GAP:'⚠ GAP OPEN',PWH:'⚠ PWH',PWL:'⚠ PWL',YDH:'⚠ YDH',YDL:'⚠ YDL',
-    BLOCKED:'🚫 BLOCKED',      // FIX: was falling through to 'ℹ INFO'
-    GAP_EXIT:'🚨 GAP EXIT',GAP_TRADE:'⚡ GAP TRADE',
+    ENTRY_CALLS:'▲ ENTER CALLS', ENTRY_PUTS:'▼ ENTER PUTS',
+    T1_HIT:'🎯 T1 HIT', T2_HIT:'🎯 T2 HIT', T3_HIT:'✅ T3 HIT', STOPPED:'🛑 STOPPED',
+    LIQ_BULL:'💧 BULL LIQ', LIQ_BEAR:'💧 BEAR LIQ',
+    TRIPLE_TOP:'🔴 TRIPLE TOP', DOUBLE_TOP:'🔴 DOUBLE TOP', TRIPLE_BOT:'🟢 TRIPLE BOT', DOUBLE_BOT:'🟢 DOUBLE BOT',
+    FAILED_BOS:'❌ FAILED BOS', THREE_LS:'⚡ 3-LINE STRIKE', EMA_SQZ:'⚡ EMA SQZ',
+    GAP:'⚠ GAP OPEN',
+    BLOCKED:'🚫 BLOCKED',
+    OB_CLEARED:'✅ OB CLEARED',
+    OB_BROKEN:'🔴 OB BROKEN',
+    GAP_EXIT:'🚨 GAP EXIT', GAP_TRADE:'⚡ GAP TRADE',
     INFO:'ℹ INFO'
   }[t]||t;
 }
@@ -634,11 +704,16 @@ function selectAlert(id) {
     ${a.gapSize?`<div class="detail-field df-orange"><span class="df-label">GAP SIZE</span><span class="df-val">${a.gapSize} pts</span></div>`:''}
   `:'';
 
+  const obFields=(a.type==='OB_CLEARED'||a.type==='OB_BROKEN')?`
+    <div class="detail-field ${a.type==='OB_CLEARED'?'df-calls':'df-puts'}"><span class="df-label">OB LEVEL</span><span class="df-val">${a.obLevel||'—'}</span></div>
+    <div class="detail-field"><span class="df-label">BIAS</span><span class="df-val">${a.obBias||'—'}</span></div>
+  `:'';
+
   document.getElementById('detailPanel').innerHTML=`
     <div class="detail-field ${isCall?'df-calls':isPut?'df-puts':''}"><span class="df-label">TICKER</span><span class="df-val">${a.ticker}</span></div>
     <div class="detail-field"><span class="df-label">TIMEFRAME</span><span class="df-val">${a.timeframe}</span></div>
     <div class="detail-field"><span class="df-label">TYPE</span><span class="df-val">${typeLabel(a.type)}</span></div>
-    ${gapFields}
+    ${gapFields}${obFields}
     ${a.score?`<div class="detail-field df-gold"><span class="df-label">SCORE</span><span class="df-val">${a.score}/10 ${a.quality||''}</span></div>`:''}
     ${a.dte?`<div class="detail-field"><span class="df-label">DTE MODE</span><span class="df-val">${a.dte}</span></div>`:''}
     ${a.htf?`<div class="detail-field"><span class="df-label">HTF GATE</span><span class="df-val">${a.htf==='✅'?'✅ CLEAR':'❌ BLOCKED'}</span></div>`:''}
@@ -654,21 +729,23 @@ function selectAlert(id) {
 
 // ── Stats ─────────────────────────────────────────────────────
 function updateStats() {
-  document.getElementById('statTotal').textContent=allAlerts.length;
-  document.getElementById('statCalls').textContent=allAlerts.filter(a=>a.type==='ENTRY_CALLS').length;
-  document.getElementById('statPuts').textContent =allAlerts.filter(a=>a.type==='ENTRY_PUTS').length;
-  document.getElementById('statT3').textContent   =allAlerts.filter(a=>a.type==='T3_HIT').length;
-  document.getElementById('statGap').textContent  =allAlerts.filter(a=>['GAP_TRADE','GAP_EXIT'].includes(a.type)).length;
-  if(allAlerts.length) document.getElementById('statLast').textContent=`${allAlerts[0].ticker} ${formatTime(allAlerts[0].timestamp)}`;
+  document.getElementById('statTotal').textContent=allAlerts.filter(a=>a).length;
+  document.getElementById('statCalls').textContent=allAlerts.filter(a=>a&&a.type==='ENTRY_CALLS').length;
+  document.getElementById('statPuts').textContent =allAlerts.filter(a=>a&&a.type==='ENTRY_PUTS').length;
+  document.getElementById('statT3').textContent   =allAlerts.filter(a=>a&&a.type==='T3_HIT').length;
+  document.getElementById('statGap').textContent  =allAlerts.filter(a=>a&&['GAP_TRADE','GAP_EXIT'].includes(a.type)).length;
+  document.getElementById('statOB').textContent   =allAlerts.filter(a=>a&&['OB_CLEARED','OB_BROKEN'].includes(a.type)).length;
+  const last=allAlerts.find(a=>a);
+  if(last) document.getElementById('statLast').textContent=`${last.ticker} ${formatTime(last.timestamp)}`;
 }
 
 // ── Ticker heatmap ─────────────────────────────────────────────
 function updateTickerGrid() {
-  const recent=allAlerts.slice(0,50);
+  const recent=allAlerts.filter(a=>a).slice(0,50);
   document.getElementById('tickerGrid').innerHTML=TICKERS.map(t=>{
     const ta=recent.filter(a=>a.ticker===t);
-    const hasCalls=ta.some(a=>a.signal==='CALLS'&&['ENTRY_CALLS','LIQ_BULL','TRIPLE_BOT','DOUBLE_BOT','GAP_TRADE'].includes(a.type));
-    const hasPuts =ta.some(a=>a.signal==='PUTS' &&['ENTRY_PUTS','LIQ_BEAR','TRIPLE_TOP','DOUBLE_TOP','GAP_TRADE'].includes(a.type));
+    const hasCalls=ta.some(a=>a.signal==='CALLS'&&['ENTRY_CALLS','LIQ_BULL','TRIPLE_BOT','DOUBLE_BOT','GAP_TRADE','OB_CLEARED'].includes(a.type));
+    const hasPuts =ta.some(a=>a.signal==='PUTS' &&['ENTRY_PUTS','LIQ_BEAR','TRIPLE_TOP','DOUBLE_TOP','GAP_TRADE','OB_BROKEN'].includes(a.type));
     const hasGap  =ta.some(a=>a.type==='GAP_EXIT');
     const cls=hasCalls?'has-calls':hasPuts?'has-puts':hasGap?'has-gap':'';
     return `<div class="ticker-cell ${cls}">${t}</div>`;
@@ -678,15 +755,18 @@ function updateTickerGrid() {
 // ── Toast ─────────────────────────────────────────────────────
 let toastTimer=null;
 function showToast(a) {
+  if (!a) return;
   const toast=document.getElementById('toast');
   document.getElementById('toastTicker').textContent=`${a.ticker}  ${a.timeframe}`;
   document.getElementById('toastBody').textContent=a.verdict;
   toast.className='show '+(
-    a.type==='ENTRY_CALLS'?'toast-calls':
-    a.type==='ENTRY_PUTS' ?'toast-puts':
-    a.type==='T3_HIT'     ?'toast-gold':
-    a.type==='GAP_EXIT'   ?'toast-gap-exit':
-    a.type==='GAP_TRADE'  ?'toast-gap-trade':
+    a.type==='ENTRY_CALLS' ?'toast-calls':
+    a.type==='ENTRY_PUTS'  ?'toast-puts':
+    a.type==='T3_HIT'      ?'toast-gold':
+    a.type==='GAP_EXIT'    ?'toast-gap-exit':
+    a.type==='GAP_TRADE'   ?'toast-gap-trade':
+    a.type==='OB_CLEARED'  ?'toast-ob-clear':
+    a.type==='OB_BROKEN'   ?'toast-ob-break':
     'toast-warn'
   );
   if(toastTimer) clearTimeout(toastTimer);
@@ -702,7 +782,7 @@ function toggleSound() {
 }
 
 function playSound(a) {
-  if(!soundEnabled) return;
+  if(!soundEnabled||!a) return;
   const ctx=new(window.AudioContext||window.webkitAudioContext)();
   const osc=ctx.createOscillator(), gain=ctx.createGain();
   osc.connect(gain); gain.connect(ctx.destination);
@@ -712,6 +792,8 @@ function playSound(a) {
   else if (a.type==='T3_HIT')      { osc.frequency.setValueAtTime(880,now);  osc.frequency.setValueAtTime(1320,now+0.1); osc.frequency.setValueAtTime(1760,now+0.2); }
   else if (a.type==='GAP_EXIT')    { osc.frequency.setValueAtTime(1200,now); osc.frequency.setValueAtTime(600,now+0.15); osc.frequency.setValueAtTime(300,now+0.3); }
   else if (a.type==='GAP_TRADE')   { osc.frequency.setValueAtTime(660,now);  osc.frequency.setValueAtTime(880,now+0.12); }
+  else if (a.type==='OB_CLEARED')  { osc.frequency.setValueAtTime(660,now);  osc.frequency.setValueAtTime(880,now+0.1); }
+  else if (a.type==='OB_BROKEN')   { osc.frequency.setValueAtTime(550,now);  osc.frequency.setValueAtTime(330,now+0.1); }
   else                             { osc.frequency.setValueAtTime(440,now); }
   const dur=a.type==='GAP_EXIT'?0.5:0.3;
   gain.gain.setValueAtTime(0.15,now);
@@ -736,7 +818,15 @@ async function sendTestAlert() {
   const roll=Math.random();
   let message;
 
-  if (roll<0.12) {
+  if (roll<0.1) {
+    // OB Cleared test
+    const level=(+entry + +atr*0.5).toFixed(2);
+    message=`TICKER:${ticker} ✅ OB CLEARED — Bull OB now Support [${tf}] | Level: ${level} | Price broke above OB — watch for retest as support | Calls bias above this zone`;
+  } else if (roll<0.2) {
+    // OB Broken test
+    const level=(+entry - +atr*0.5).toFixed(2);
+    message=`TICKER:${ticker} 🔴 OB BROKEN — Bear OB now Resistance [${tf}] | Level: ${level} | Price broke below OB — watch for retest as resistance | Puts bias below this zone`;
+  } else if (roll<0.3) {
     const exitDir=isCall?'CALLS':'PUTS';
     const gapDir=isCall?'DOWN ▼':'UP ▲';
     message=`GAP EXIT — 🚨 EXIT ${exitDir} — GAP ${gapDir} AGAINST POSITION [${tf}]`
@@ -744,7 +834,7 @@ async function sendTestAlert() {
       +` | Gap: ${(+atr*1.5).toFixed(2)} (LARGE)`
       +` | Your ${exitDir.toLowerCase()} SL already breached at open — EXIT NOW`
       +` | Watch for ${isCall?'puts':'calls'} setup after suppression lifts`;
-  } else if (roll<0.25) {
+  } else if (roll<0.45) {
     const biases=['GAP & GO','GAP FILL','FADE'];
     const bias=biases[Math.floor(Math.random()*biases.length)];
     const types=['MEDIUM','LARGE','EXHAUSTION'];
