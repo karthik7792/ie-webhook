@@ -1,19 +1,44 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const fs = require('fs');
+
+// ── Persistence ───────────────────────────────────────────────
+// Alerts are written to disk so they survive server restarts.
+// This is what makes the Active Signals panel work across sessions:
+// a 4H/1D carry signal fired at 3:30 PM will still appear active
+// the next morning when the dashboard reconnects.
+const ALERTS_FILE = path.join(__dirname, 'alerts_store.json');
+
+function loadAlerts() {
+  try {
+    if (fs.existsSync(ALERTS_FILE)) {
+      const raw = fs.readFileSync(ALERTS_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.slice(0, 200) : [];
+    }
+  } catch (e) {
+    console.warn('Could not load alerts_store.json, starting fresh:', e.message);
+  }
+  return [];
+}
+
+function saveAlerts() {
+  try {
+    fs.writeFileSync(ALERTS_FILE, JSON.stringify(alerts, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Could not write alerts_store.json:', e.message);
+  }
+}
 
 // ── Body parsers — order matters ──────────────────────────────
 // TradingView sends plain text OR JSON depending on alert config
 app.use((req, res, next) => {
   express.text({ type: '*/*' })(req, res, (err) => {
     if (err) return next(err);
-    // If body is a string that looks like JSON, also parse it
     if (typeof req.body === 'string') {
-      try {
-        req.bodyJson = JSON.parse(req.body);
-      } catch (e) {
-        req.bodyJson = null;
-      }
+      try { req.bodyJson = JSON.parse(req.body); }
+      catch (e) { req.bodyJson = null; }
     }
     next();
   });
@@ -21,8 +46,10 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.static('.'));
 
-// In-memory store — last 200 alerts
-let alerts = [];
+// Load persisted alerts on startup
+let alerts = loadAlerts();
+console.log(`Loaded ${alerts.length} persisted alert(s) from disk`);
+
 let clients = []; // SSE clients
 
 // ── SSE endpoint for live push ────────────────────────────────
@@ -49,28 +76,19 @@ function broadcast(alert) {
 // ── Webhook endpoint — TradingView sends here ─────────────────
 app.post('/webhook', (req, res) => {
   try {
-    // ── Extract raw message text ──────────────────────────────
-    // TradingView can send:
-    //   1. Plain text string  (most common when you type message in alert box)
-    //   2. JSON with a message/text field
-    //   3. JSON with ticker + alert_message fields
     let raw = '';
     let tickerOverride = '';
 
     if (typeof req.body === 'string' && req.body.trim()) {
-      // Case 1 — plain text (most common from TradingView)
-      // Could still be JSON string
       if (req.bodyJson) {
         const j = req.bodyJson;
         raw = j.message || j.text || j.alert_message || j.msg || '';
         tickerOverride = j.ticker || j.symbol || '';
-        // If no message field, treat the whole JSON as raw for debugging
         if (!raw) raw = req.body;
       } else {
         raw = req.body;
       }
     } else if (req.body && typeof req.body === 'object') {
-      // Case 2/3 — parsed JSON object (express.json() got it)
       const j = req.body;
       raw = j.message || j.text || j.alert_message || j.msg || '';
       tickerOverride = j.ticker || j.symbol || '';
@@ -78,7 +96,6 @@ app.post('/webhook', (req, res) => {
     }
 
     raw = raw.trim();
-
     console.log('Webhook received, raw:', raw.substring(0, 120));
 
     const alert = {
@@ -105,6 +122,9 @@ app.post('/webhook', (req, res) => {
     alerts.unshift(alert);
     if (alerts.length > 200) alerts = alerts.slice(0, 200);
 
+    // Persist to disk every time a new alert arrives
+    saveAlerts();
+
     broadcast(alert);
     res.json({ ok: true, alert });
   } catch (e) {
@@ -121,6 +141,7 @@ app.get('/alerts', (req, res) => {
 // ── Clear alerts ──────────────────────────────────────────────
 app.delete('/alerts', (req, res) => {
   alerts = [];
+  saveAlerts(); // persist the cleared state
   clients.forEach(c => c.write(`data: ${JSON.stringify({ type: 'clear' })}\n\n`));
   res.json({ ok: true });
 });
@@ -132,17 +153,13 @@ function extractField(text, field) {
 }
 
 function extractTicker(text) {
-  // 1. Explicit TICKER:XXX pattern
   const m1 = text.match(/TICKER[:\s]+([A-Z0-9]{1,6})/i);
   if (m1) return m1[1];
-  // 2. Arrow signal prefix e.g. "SPY ▲ ENTER CALLS"
   const m2 = text.match(/^([A-Z]{1,6})\s+[▲▼⚡🚨]/);
   if (m2) return m2[1];
-  // 3. Word before timeframe tag e.g. "TSLA [5m]" — skip known signal words
   const skipWords = ['PRICE','EMA','HIGH','LOW','BULL','BEAR','CALL','PUT','GAP','YDH','YDL','PWH','PWL','HTF','BOS','LIQ','SQZ'];
   const m3 = text.match(/\b([A-Z]{1,6})\s+\[(?:\d+m?|TF:)/);
   if (m3 && !skipWords.includes(m3[1])) return m3[1];
-  // 4. First uppercase word that isn't a known signal keyword
   const words = text.match(/\b([A-Z]{2,6})\b/g) || [];
   for (const w of words) {
     if (!skipWords.includes(w)) return w;
@@ -151,7 +168,8 @@ function extractTicker(text) {
 }
 
 function extractTF(text) {
-  const m = text.match(/\[TF:\s*(\w+)\]|\[(\d+m)\]|\b(5m|15m|30m|60m|1h|4h)\b/i);
+  // Extended to capture 4H, 1D, 240, 240m in addition to standard formats
+  const m = text.match(/\[TF:\s*(\w+)\]|\[(\d+[mMhHdD])\]|\b(5m|15m|30m|60m|1h|4h|1H|4H|1D|1d|240m|240)\b/i);
   return m ? (m[1] || m[2] || m[3]) : '—';
 }
 
@@ -169,7 +187,7 @@ function detectType(text) {
   if (/T1 HIT/i.test(text))         return 'T1_HIT';
   if (/T2 HIT/i.test(text))         return 'T2_HIT';
   if (/T3 HIT/i.test(text))         return 'T3_HIT';
-  if (/SIGNAL BLOCKED/i.test(text))  return 'BLOCKED';
+  if (/SIGNAL BLOCKED/i.test(text)) return 'BLOCKED';
   if (/STOPPED OUT/i.test(text))    return 'STOPPED';
   if (/BULL LIQ SWEEP/i.test(text)) return 'LIQ_BULL';
   if (/BEAR LIQ SWEEP/i.test(text)) return 'LIQ_BEAR';
@@ -187,14 +205,14 @@ function detectType(text) {
   if (/PRICE NEAR YDL/i.test(text)) return 'YDL';
   if (/FLIP.*CLOSING CALLS.*OPENING PUTS/i.test(text)) return 'ENTRY_PUTS';
   if (/FLIP.*CLOSING PUTS.*OPENING CALLS/i.test(text)) return 'ENTRY_CALLS';
+  if (/OB CLEARED/i.test(text))     return 'OB_CLEARED';
+  if (/OB BROKEN/i.test(text))      return 'OB_BROKEN';
   return 'INFO';
 }
 
 function detectSignal(text) {
   const isGapExit = /GAP EXIT/i.test(text);
-  if (isGapExit) {
-    return /EXIT CALLS/i.test(text) ? 'PUTS' : 'CALLS';
-  }
+  if (isGapExit) return /EXIT CALLS/i.test(text) ? 'PUTS' : 'CALLS';
   if (/▲ CALLS/i.test(text) || (/CALLS/i.test(text) && !/PUTS/i.test(text))) return 'CALLS';
   if (/▼ PUTS/i.test(text)  || (/PUTS/i.test(text)  && !/CALLS/i.test(text))) return 'PUTS';
   if (/CALLS/i.test(text) && /PUTS/i.test(text)) return 'MIXED';
