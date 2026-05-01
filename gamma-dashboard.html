@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>IE v6.2 — Gamma Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #05050f;
+  --bg2:       #08081a;
+  --bg3:       #0c0c22;
+  --border:    #1a1a40;
+  --border2:   #2a2a60;
+  --calls:     #00e676;
+  --calls-dim: #004d26;
+  --puts:      #ff1744;
+  --puts-dim:  #4d0010;
+  --gold:      #ffd700;
+  --orange:    #ff9800;
+  --cyan:      #00e5ff;
+  --purple:    #ce93d8;
+  --gray:      #444466;
+  --text:      #c8c8e8;
+  --text-dim:  #666688;
+  --warn:      #ff9800;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border2);background:linear-gradient(180deg,#0a0a20 0%,var(--bg) 100%);position:sticky;top:0;z-index:100;gap:12px;flex-wrap:wrap}
+.logo{font-family:'Orbitron',monospace;font-weight:900;font-size:1rem;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 20px rgba(0,229,255,0.4)}
+.logo span{color:var(--gold)}
+.header-mid{display:flex;align-items:center;gap:10px;flex:1;justify-content:center;flex-wrap:wrap}
+.header-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.live-dot{display:flex;align-items:center;gap:7px;font-size:0.68rem;color:var(--text-dim);font-family:'Share Tech Mono',monospace;letter-spacing:2px}
+.live-dot .dot{width:7px;height:7px;border-radius:50%;background:var(--calls);box-shadow:0 0 8px var(--calls);animation:pulse 1.5s ease-in-out infinite}
+.live-dot.disconnected .dot{background:var(--puts);box-shadow:0 0 8px var(--puts);animation:none}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+@keyframes glow{0%,100%{opacity:1}50%{opacity:0.5}}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:0.3}}
+.clock{font-family:'Share Tech Mono',monospace;font-size:0.82rem;color:var(--gold);letter-spacing:2px}
+.nav-link{font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--text-dim);letter-spacing:2px;text-decoration:none;padding:5px 10px;border:1px solid var(--border);transition:all 0.2s}
+.nav-link:hover{border-color:var(--cyan);color:var(--cyan)}
+.session-badge{font-family:'Share Tech Mono',monospace;font-size:0.65rem;padding:4px 10px;border:1px solid var(--border2);letter-spacing:1.5px}
+.session-badge.pre{color:var(--purple);border-color:var(--purple)}
+.session-badge.open{color:var(--calls);border-color:var(--calls);animation:glow 2s ease-in-out infinite}
+.session-badge.closed{color:var(--text-dim)}
+
+/* ── STATS BAR ── */
+.stats-bar{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap}
+.stat-pill{padding:9px 18px;font-family:'Share Tech Mono',monospace;font-size:0.7rem;letter-spacing:1.5px;display:flex;align-items:center;gap:9px;border-right:1px solid var(--border)}
+.stat-pill:last-child{border-right:none}
+.stat-pill .label{color:var(--text-dim)}
+.stat-pill .val{color:var(--cyan)}
+.stat-calls .val{color:var(--calls)}
+.stat-puts .val{color:var(--puts)}
+.stat-conflict .val{color:var(--warn)}
+.stat-skip .val{color:var(--text-dim)}
+.stat-active .val{color:var(--gold);font-weight:700}
+
+/* ── GAMMA SETUP PANEL ── */
+.setup-panel{background:var(--bg2);border-bottom:2px solid var(--border2);overflow:hidden}
+.setup-header{display:flex;align-items:center;gap:12px;padding:9px 24px;cursor:pointer;user-select:none;transition:background 0.15s}
+.setup-header:hover{background:var(--bg3)}
+.setup-title{font-family:'Orbitron',monospace;font-size:0.58rem;letter-spacing:3px;color:var(--gold)}
+.setup-sub{font-family:'Share Tech Mono',monospace;font-size:0.62rem;color:var(--text-dim);letter-spacing:1px}
+.setup-chevron{margin-left:auto;font-size:0.7rem;color:var(--text-dim);transition:transform 0.25s}
+.setup-panel.open .setup-chevron{transform:rotate(180deg)}
+.setup-body{max-height:0;overflow:hidden;transition:max-height 0.4s ease}
+.setup-panel.open .setup-body{max-height:600px}
+.setup-inner{padding:14px 24px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+
+.ticker-setup{background:var(--bg);border:1px solid var(--border);padding:10px 12px}
+.ts-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ts-name{font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:600;color:var(--cyan);letter-spacing:2px}
+.ts-regime{font-family:'Share Tech Mono',monospace;font-size:0.6rem;padding:2px 7px;letter-spacing:1px}
+.ts-regime.bull{background:var(--calls-dim);color:var(--calls);border:1px solid var(--calls)}
+.ts-regime.bear{background:var(--puts-dim);color:var(--puts);border:1px solid var(--puts)}
+.ts-regime.neutral{background:var(--bg2);color:var(--text-dim);border:1px solid var(--border2)}
+.ts-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.ts-field{display:flex;flex-direction:column;gap:2px}
+.ts-label{font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--text-dim);letter-spacing:1px}
+.ts-input{background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.7rem;padding:4px 7px;width:100%;outline:none;transition:border-color 0.15s}
+.ts-input:focus{border-color:var(--cyan)}
+.ts-input.flip-input:focus{border-color:var(--gold)}
+.ts-input.call-input:focus{border-color:var(--calls)}
+.ts-input.put-input:focus{border-color:var(--puts)}
+.ts-input.vu-input:focus{border-color:var(--orange)}
+.ts-input.vd-input:focus{border-color:var(--purple)}
+.ts-input.mp-input:focus{border-color:#00b0ff}
+.setup-actions{display:flex;gap:10px;padding:0 24px 14px;align-items:center;flex-wrap:wrap}
+.btn-save{background:none;border:1px solid var(--gold);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:0.68rem;padding:7px 18px;cursor:pointer;letter-spacing:2px;transition:all 0.2s}
+.btn-save:hover{background:rgba(255,215,0,0.1)}
+.btn-reset{background:none;border:1px solid var(--border2);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:0.65rem;padding:6px 14px;cursor:pointer;letter-spacing:1.5px;transition:all 0.2s}
+.btn-reset:hover{border-color:var(--puts);color:var(--puts)}
+.setup-hint{font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--text-dim);letter-spacing:1px}
+
+/* ── MAIN DASHBOARD ── */
+.dash{padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+
+/* ── SECTION HEADERS ── */
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.section-label{font-family:'Orbitron',monospace;font-size:0.58rem;letter-spacing:3px}
+.section-label.calls{color:var(--calls)}
+.section-label.puts{color:var(--puts)}
+.section-label.conflict{color:var(--warn)}
+.section-label.skip{color:var(--text-dim)}
+.section-count{font-family:'Share Tech Mono',monospace;font-size:0.65rem;padding:2px 8px;border:1px solid var(--border2);color:var(--text-dim);min-width:24px;text-align:center}
+.section-count.live{border-color:var(--gold);color:var(--gold);animation:glow 2s ease-in-out infinite}
+.section-divider{flex:1;height:0.5px;background:var(--border)}
+
+/* ── TICKER CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px}
+.ticker-card{background:var(--bg2);border:1px solid var(--border);border-left:none;display:grid;grid-template-columns:4px 1fr;animation:slideIn 0.3s ease}
+.ticker-card .card-stripe{width:4px}
+.ticker-card.dir-calls .card-stripe{background:var(--calls)}
+.ticker-card.dir-puts  .card-stripe{background:var(--puts)}
+.ticker-card.dir-conflict .card-stripe{background:var(--warn)}
+.ticker-card.dir-skip .card-stripe{background:var(--gray)}
+.ticker-card.dir-wait .card-stripe{background:var(--border2)}
+.card-inner{padding:10px 13px}
+
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+.card-ticker{font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;letter-spacing:2px}
+.dir-calls .card-ticker{color:var(--calls)}
+.dir-puts  .card-ticker{color:var(--puts)}
+.dir-conflict .card-ticker{color:var(--warn)}
+.dir-skip .card-ticker{color:var(--text-dim)}
+.dir-wait .card-ticker{color:var(--text-dim)}
+
+.card-decision{font-family:'Share Tech Mono',monospace;font-size:0.65rem;padding:2px 9px;font-weight:700;letter-spacing:1.5px;border:1px solid}
+.dec-calls   {background:var(--calls-dim);color:var(--calls);border-color:var(--calls)}
+.dec-puts    {background:var(--puts-dim);color:var(--puts);border-color:var(--puts)}
+.dec-conflict{background:rgba(255,152,0,0.12);color:var(--warn);border-color:var(--warn)}
+.dec-skip    {background:var(--bg);color:var(--text-dim);border-color:var(--border2)}
+.dec-wait    {background:var(--bg);color:var(--text-dim);border-color:var(--border)}
+
+.card-score{margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--cyan)}
+.card-tf{font-family:'Share Tech Mono',monospace;font-size:0.58rem;padding:2px 6px;border:1px solid var(--border2);color:var(--text-dim);letter-spacing:1px}
+.card-tf.tf-5m{border-color:var(--gold);color:var(--gold)}
+.card-tf.tf-15m{border-color:var(--orange);color:var(--orange)}
+.card-tf.tf-30m{border-color:var(--purple);color:var(--purple)}
+.card-tf.tf-60m{border-color:#00b0ff;color:#00b0ff}
+
+.card-body{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px}
+.cb-section{display:flex;flex-direction:column;gap:3px}
+.cb-title{font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--text-dim);letter-spacing:1.5px;margin-bottom:2px;border-bottom:0.5px solid var(--border);padding-bottom:2px}
+.cb-row{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:0.62rem}
+.cb-key{color:var(--text-dim)}
+.cb-val{color:var(--text)}
+.cb-val.green{color:var(--calls)}
+.cb-val.red{color:var(--puts)}
+.cb-val.gold{color:var(--gold)}
+.cb-val.orange{color:var(--orange)}
+.cb-val.cyan{color:var(--cyan)}
+.cb-val.warn{color:var(--warn)}
+.cb-val.purple{color:var(--purple)}
+.cb-val.blue{color:#00b0ff}
+.cb-val.dim{color:var(--text-dim)}
+
+.card-verdict{font-family:'Share Tech Mono',monospace;font-size:0.65rem;padding:5px 8px;background:var(--bg);border:1px solid var(--border);line-height:1.5;margin-bottom:6px}
+.card-verdict.v-calls   {border-left:2px solid var(--calls);color:var(--calls)}
+.card-verdict.v-puts    {border-left:2px solid var(--puts);color:var(--puts)}
+.card-verdict.v-conflict{border-left:2px solid var(--warn);color:var(--warn)}
+.card-verdict.v-skip    {border-left:2px solid var(--gray);color:var(--text-dim)}
+.card-verdict.v-wait    {border-left:2px solid var(--border2);color:var(--text-dim)}
+
+.card-levels{display:flex;gap:10px;flex-wrap:wrap;font-family:'Share Tech Mono',monospace;font-size:0.6rem}
+.lev-item{display:flex;gap:4px}
+.lev-label{color:var(--text-dim)}
+.lev-val{color:var(--text)}
+.lev-val.sl{color:var(--puts)}
+.lev-val.t1{color:var(--gold)}
+.lev-val.t2{color:var(--orange)}
+.lev-val.t3{color:var(--calls)}
+.lev-val.entry{color:var(--cyan)}
+.lev-val.flip{color:var(--gold)}
+.lev-val.call-wall{color:var(--calls)}
+.lev-val.put-wall{color:var(--puts)}
+
+.card-age{font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--text-dim);margin-top:4px}
+
+/* ── CARRY-OVER banner ── */
+.carry-tag{font-family:'Share Tech Mono',monospace;font-size:0.58rem;padding:1px 6px;background:rgba(0,229,255,0.08);border:1px solid var(--cyan);color:var(--cyan);letter-spacing:1px}
+
+/* ── NO GAMMA label ── */
+.no-gamma{font-family:'Share Tech Mono',monospace;font-size:0.58rem;padding:1px 6px;background:rgba(255,152,0,0.08);border:1px solid var(--warn);color:var(--warn)}
+
+/* ── EMPTY STATE ── */
+.empty-section{font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--text-dim);padding:14px 0;letter-spacing:2px;text-align:center;border:1px dashed var(--border);margin-bottom:4px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);padding:12px 18px;max-width:300px;z-index:9998;font-family:'Share Tech Mono',monospace;font-size:0.7rem;letter-spacing:1px;transform:translateY(80px);opacity:0;transition:all 0.3s ease;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.t-calls{border-left:3px solid var(--calls)}
+#toast.t-puts{border-left:3px solid var(--puts)}
+#toast.t-conflict{border-left:3px solid var(--warn)}
+.toast-ticker{font-family:'Orbitron',monospace;font-size:0.78rem;margin-bottom:3px}
+.toast-body{color:var(--text-dim);font-size:0.65rem}
+
+/* ── LAST UPDATE ── */
+.last-update{font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--text-dim);text-align:right;padding:0 20px 8px;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">IE <span>v6.2</span> GAMMA DASHBOARD</div>
+  <div class="header-mid">
+    <div class="session-badge" id="sessionBadge">PRE-MARKET</div>
+    <span class="setup-hint" style="font-size:0.6rem;font-family:'Share Tech Mono',monospace;color:var(--text-dim)">Enter gamma levels below at 9:30 open</span>
+  </div>
+  <div class="header-right">
+    <div class="clock" id="clock">--:--:-- ET</div>
+    <div class="live-dot disconnected" id="liveStatus"><div class="dot"></div><span id="liveLabel">CONNECTING</span></div>
+    <a class="nav-link" href="/index.html">SIGNAL FEED</a>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat-pill stat-calls"><span class="label">CALLS SETUP</span><span class="val" id="sCalls">0</span></div>
+  <div class="stat-pill stat-puts"><span class="label">PUTS SETUP</span><span class="val" id="sPuts">0</span></div>
+  <div class="stat-pill stat-conflict"><span class="label">CONFLICT</span><span class="val" id="sConflict">0</span></div>
+  <div class="stat-pill stat-skip"><span class="label">SKIP / WAIT</span><span class="val" id="sSkip">0</span></div>
+  <div class="stat-pill stat-active"><span class="label">ACTIVE SIGNALS</span><span class="val" id="sActive">0</span></div>
+  <div class="stat-pill"><span class="label">LAST SIGNAL</span><span class="val" id="sLast">—</span></div>
+</div>
+
+<!-- GAMMA SETUP PANEL -->
+<div class="setup-panel open" id="setupPanel">
+  <div class="setup-header" onclick="toggleSetup()">
+    <span class="setup-title">GAMMA LEVELS — SESSION SETUP</span>
+    <span class="setup-sub" id="setupSub">Enter levels once at 9:30 open — they persist for the session</span>
+    <span class="setup-chevron">▼</span>
+  </div>
+  <div class="setup-body">
+    <div class="setup-inner" id="setupInner"></div>
+    <div class="setup-actions">
+      <button class="btn-save" onclick="saveLevels()">SAVE LEVELS</button>
+      <button class="btn-reset" onclick="resetLevels()">RESET</button>
+      <span class="setup-hint">GEX Flip = regime boundary &nbsp;|&nbsp; Call Wall = T1 target &nbsp;|&nbsp; Put Wall = T1 target for puts &nbsp;|&nbsp; VU/VD = vol trigger beyond wall</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div class="dash" id="dash">
+  <!-- Calls section -->
+  <div>
+    <div class="section-head">
+      <span class="section-label calls">CALLS SETUPS</span>
+      <span class="section-count" id="countCalls">0</span>
+      <div class="section-divider"></div>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--calls);letter-spacing:1px">IE + GAMMA ALIGNED LONG</span>
+    </div>
+    <div class="cards-grid" id="gridCalls"><div class="empty-section">No active calls setups — awaiting IE signals</div></div>
+  </div>
+
+  <!-- Puts section -->
+  <div>
+    <div class="section-head">
+      <span class="section-label puts">PUTS SETUPS</span>
+      <span class="section-count" id="countPuts">0</span>
+      <div class="section-divider"></div>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--puts);letter-spacing:1px">IE + GAMMA ALIGNED SHORT</span>
+    </div>
+    <div class="cards-grid" id="gridPuts"><div class="empty-section">No active puts setups — awaiting IE signals</div></div>
+  </div>
+
+  <!-- Conflict section -->
+  <div>
+    <div class="section-head">
+      <span class="section-label conflict">CONFLICTS</span>
+      <span class="section-count" id="countConflict">0</span>
+      <div class="section-divider"></div>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--warn);letter-spacing:1px">IE AND GAMMA DISAGREE — WAIT</span>
+    </div>
+    <div class="cards-grid" id="gridConflict"><div class="empty-section">No conflicts detected</div></div>
+  </div>
+
+  <!-- Skip section -->
+  <div>
+    <div class="section-head">
+      <span class="section-label skip">SKIP / NO TRADE</span>
+      <span class="section-count" id="countSkip">0</span>
+      <div class="section-divider"></div>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--text-dim);letter-spacing:1px">BLOCKED OR INSUFFICIENT SETUP</span>
+    </div>
+    <div class="cards-grid" id="gridSkip"><div class="empty-section">No skip signals</div></div>
+  </div>
+</div>
+
+<div class="last-update" id="lastUpdate">Dashboard ready — awaiting connection</div>
+
+<div id="toast"><div class="toast-ticker" id="toastTicker"></div><div class="toast-body" id="toastBody"></div></div>
+
+<script>
+// ── TICKERS ──────────────────────────────────────────────────
+const TICKERS = ['SPY','QQQ','SPX','META','AMZN','MSFT','NVDA','IWM','AAPL','AMD','TSLA','MSTR','COIN','HOOD','AVGO','MU','GOOGL','CRWV','ASTS','PLTR'];
+
+// ── STATE ────────────────────────────────────────────────────
+let allAlerts = [];
+const activeMap = new Map(); // key: ticker||tf||signal → alert
+let gammaLevels = {}; // key: ticker → {flip,callWall,putWall,vu,vd,mp}
+let es = null;
+let toastTimer = null;
+
+// ── STORAGE — server-side, persists across all devices ───────
+async function loadLevels() {
+  try {
+    const res = await fetch('/gamma-levels');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object') gammaLevels = data;
+    }
+  } catch(e) {
+    console.warn('Could not load gamma levels from server:', e.message);
+  }
+}
+
+async function persistLevels() {
+  try {
+    await fetch('/gamma-levels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(gammaLevels)
+    });
+  } catch(e) {
+    console.warn('Could not save gamma levels to server:', e.message);
+  }
+}
+
+// ── SETUP PANEL ──────────────────────────────────────────────
+function buildSetupPanel() {
+  const inner = document.getElementById('setupInner');
+  inner.innerHTML = TICKERS.map(t => {
+    const g = gammaLevels[t] || {};
+    const regime = getRegime(t);
+    const regimeCls = regime === 'bull' ? 'bull' : regime === 'bear' ? 'bear' : 'neutral';
+    const regimeLabel = regime === 'bull' ? 'LONG GAMMA' : regime === 'bear' ? 'SHORT GAMMA' : 'NO LEVELS';
+    return `
+    <div class="ticker-setup">
+      <div class="ts-head">
+        <span class="ts-name">${t}</span>
+        <span class="ts-regime ${regimeCls}" id="regime_${t}">${regimeLabel}</span>
+      </div>
+      <div class="ts-fields">
+        <div class="ts-field">
+          <span class="ts-label">GEX FLIP</span>
+          <input class="ts-input flip-input" id="inp_${t}_flip" type="number" step="0.5" placeholder="—" value="${g.flip||''}" onchange="levelChanged('${t}')"/>
+        </div>
+        <div class="ts-field">
+          <span class="ts-label">CALL WALL</span>
+          <input class="ts-input call-input" id="inp_${t}_callWall" type="number" step="0.5" placeholder="—" value="${g.callWall||''}" onchange="levelChanged('${t}')"/>
+        </div>
+        <div class="ts-field">
+          <span class="ts-label">PUT WALL</span>
+          <input class="ts-input put-input" id="inp_${t}_putWall" type="number" step="0.5" placeholder="—" value="${g.putWall||''}" onchange="levelChanged('${t}')"/>
+        </div>
+        <div class="ts-field">
+          <span class="ts-label">VU TRIGGER</span>
+          <input class="ts-input vu-input" id="inp_${t}_vu" type="number" step="0.5" placeholder="—" value="${g.vu||''}" onchange="levelChanged('${t}')"/>
+        </div>
+        <div class="ts-field">
+          <span class="ts-label">VD TRIGGER</span>
+          <input class="ts-input vd-input" id="inp_${t}_vd" type="number" step="0.5" placeholder="—" value="${g.vd||''}" onchange="levelChanged('${t}')"/>
+        </div>
+        <div class="ts-field">
+          <span class="ts-label">MAX PAIN</span>
+          <input class="ts-input mp-input" id="inp_${t}_mp" type="number" step="0.5" placeholder="—" value="${g.mp||''}" onchange="levelChanged('${t}')"/>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function levelChanged(ticker) {
+  readInputs(ticker);
+  updateRegimeBadge(ticker);
+}
+
+function readInputs(ticker) {
+  const fields = ['flip','callWall','putWall','vu','vd','mp'];
+  const g = {};
+  fields.forEach(f => {
+    const el = document.getElementById(`inp_${ticker}_${f}`);
+    if (el && el.value !== '') g[f] = parseFloat(el.value);
+  });
+  gammaLevels[ticker] = g;
+}
+
+function updateRegimeBadge(ticker) {
+  const el = document.getElementById(`regime_${ticker}`);
+  if (!el) return;
+  const regime = getRegime(ticker);
+  el.className = 'ts-regime ' + (regime === 'bull' ? 'bull' : regime === 'bear' ? 'bear' : 'neutral');
+  el.textContent = regime === 'bull' ? 'LONG GAMMA' : regime === 'bear' ? 'SHORT GAMMA' : 'NO LEVELS';
+}
+
+async function saveLevels() {
+  TICKERS.forEach(t => readInputs(t));
+  await persistLevels();
+  buildSetupPanel();
+  renderDash();
+  document.getElementById('setupSub').textContent = `Levels saved at ${formatTime(new Date().toISOString())} — synced across all devices`;
+  setTimeout(() => {
+    document.getElementById('setupPanel').classList.remove('open');
+  }, 800);
+}
+
+async function resetLevels() {
+  if (!confirm('Reset all gamma levels?')) return;
+  gammaLevels = {};
+  await fetch('/gamma-levels', { method: 'DELETE' });
+  buildSetupPanel();
+  renderDash();
+}
+
+function toggleSetup() {
+  document.getElementById('setupPanel').classList.toggle('open');
+}
+
+// ── GAMMA LOGIC ──────────────────────────────────────────────
+function getRegime(ticker) {
+  // We don't know current price here, just whether levels are set
+  const g = gammaLevels[ticker];
+  if (!g || !g.flip) return 'none';
+  // Returns 'bull', 'bear', or 'none' — actual price comparison happens at signal evaluation
+  return 'set';
+}
+
+function gammaContext(ticker, signalPrice) {
+  // Returns object describing gamma situation for this ticker at this price
+  const g = gammaLevels[ticker];
+  if (!g || !g.flip) return { hasLevels: false };
+
+  const price = signalPrice || 0;
+  const aboveFlip = price > 0 ? price >= g.flip : null;
+  const nearCallWall = g.callWall && price > 0 ? Math.abs(price - g.callWall) / g.callWall < 0.005 : false;
+  const nearPutWall = g.putWall && price > 0 ? Math.abs(price - g.putWall) / g.putWall < 0.005 : false;
+  const aboveCallWall = g.callWall && price > 0 ? price > g.callWall : false;
+  const belowPutWall = g.putWall && price > 0 ? price < g.putWall : false;
+
+  return {
+    hasLevels: true,
+    flip: g.flip,
+    callWall: g.callWall,
+    putWall: g.putWall,
+    vu: g.vu,
+    vd: g.vd,
+    mp: g.mp,
+    aboveFlip,
+    nearCallWall,
+    nearPutWall,
+    aboveCallWall,
+    belowPutWall,
+    regime: aboveFlip ? 'LONG GAMMA' : 'SHORT GAMMA',
+  };
+}
+
+function decideTradeDir(alert, gc) {
+  // Returns: 'calls' | 'puts' | 'conflict' | 'skip' | 'wait'
+  const sig = alert.signal;
+  const type = alert.type;
+  const score = alert.score || 0;
+  const blocked = type === 'BLOCKED';
+
+  if (blocked) return 'skip';
+
+  if (!gc.hasLevels) {
+    // No gamma levels — pass through IE signal directly as wait state
+    if (sig === 'CALLS') return 'wait';
+    if (sig === 'PUTS')  return 'wait';
+    return 'skip';
+  }
+
+  const aboveFlip = gc.aboveFlip;
+
+  if (sig === 'CALLS') {
+    if (aboveFlip === null) return 'wait';
+    if (!aboveFlip) return 'conflict'; // IE says calls but below GEX flip
+    if (gc.nearCallWall) return 'conflict'; // At Call Wall — mechanical ceiling
+    if (gc.aboveCallWall) return 'calls'; // Already through the wall — cascade
+    return 'calls';
+  }
+
+  if (sig === 'PUTS') {
+    if (aboveFlip === null) return 'wait';
+    if (aboveFlip) return 'conflict'; // IE says puts but above GEX flip (long gamma)
+    if (gc.nearPutWall) return 'conflict'; // Near Put Wall — potential support
+    if (gc.belowPutWall) return 'puts'; // Below Put Wall — cascade confirmed
+    return 'puts';
+  }
+
+  return 'skip';
+}
+
+function buildVerdict(alert, gc, dir) {
+  const sig = alert.signal;
+  const score = alert.score;
+
+  if (dir === 'calls') {
+    const target = gc.aboveCallWall
+      ? (gc.vu ? `VU Trigger $${gc.vu}` : 'Vol Trigger')
+      : (gc.callWall ? `Call Wall $${gc.callWall}` : 'T1');
+    const sizeNote = score >= 9 ? 'Full size' : score >= 7 ? 'Standard size' : 'Half size';
+    return `${sizeNote} — T1: ${target}${gc.vu && !gc.aboveCallWall ? ` → T2: VU $${gc.vu}` : ''}`;
+  }
+  if (dir === 'puts') {
+    const target = gc.belowPutWall
+      ? (gc.vd ? `VD Trigger $${gc.vd}` : 'Vol Trigger')
+      : (gc.putWall ? `Put Wall $${gc.putWall}` : 'T1');
+    const sizeNote = score >= 9 ? 'Full size' : score >= 7 ? 'Standard size' : 'Half size';
+    return `${sizeNote} — T1: ${target}${gc.vd && !gc.belowPutWall ? ` → T2: VD $${gc.vd}` : ''}`;
+  }
+  if (dir === 'conflict') {
+    if (!gc.hasLevels) return 'Enter gamma levels to resolve';
+    if (sig === 'CALLS' && !gc.aboveFlip) return `IE bullish but price below GEX Flip $${gc.flip} — wait for reclaim`;
+    if (sig === 'PUTS' && gc.aboveFlip)   return `IE bearish but price above GEX Flip $${gc.flip} — long gamma, wait`;
+    if (gc.nearCallWall) return `At Call Wall $${gc.callWall} — mechanical ceiling, use spread or wait for break`;
+    if (gc.nearPutWall)  return `Near Put Wall $${gc.putWall} — potential support, wait for breakdown confirm`;
+    return 'Gamma and IE signal in disagreement — stand aside';
+  }
+  if (dir === 'wait') {
+    return gc.hasLevels ? 'No gamma levels set — enter levels at 9:30 open' : 'Awaiting gamma level input';
+  }
+  return 'Signal blocked — wait for next setup';
+}
+
+// ── ACTIVE SIGNAL TRACKER ────────────────────────────────────
+function normTf(raw) {
+  const t = (raw || '').toLowerCase().replace(/\s/g, '');
+  if (t === '1d' || t === 'd' || t === 'daily') return '1d';
+  if (t === '4h' || t === '240' || t === '240m') return '4h';
+  if (t === '60m' || t === '1h' || t === '60')   return '60m';
+  if (t === '30m' || t === '30')                 return '30m';
+  if (t === '15m' || t === '15')                 return '15m';
+  if (t === '5m'  || t === '5')                  return '5m';
+  return t || '—';
+}
+
+function activeKey(a) { return `${a.ticker}||${normTf(a.timeframe)}||${a.signal}`; }
+function isEntry(t)   { return t === 'ENTRY_CALLS' || t === 'ENTRY_PUTS'; }
+function isClose(t)   { return t === 'T3_HIT' || t === 'STOPPED'; }
+
+function applyActive(a) {
+  if (!a) return;
+  if (isEntry(a.type)) activeMap.set(activeKey(a), a);
+  if (isClose(a.type)) activeMap.delete(activeKey(a));
+}
+
+function rebuildActive() {
+  activeMap.clear();
+  [...allAlerts].filter(a => a).reverse().forEach(applyActive);
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function formatAge(ts) {
+  const m = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ${m % 60}m ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function tfCls(raw) {
+  const n = normTf(raw);
+  return `tf-${n}`;
+}
+
+// ── RENDER DASHBOARD ─────────────────────────────────────────
+function renderDash() {
+  const entries = [...activeMap.values()];
+
+  const callsList = [], putsList = [], conflictList = [], skipList = [];
+
+  entries.forEach(alert => {
+    const price = alert.entry || 0;
+    const gc = gammaContext(alert.ticker, price);
+    const dir = decideTradeDir(alert, gc);
+    const verdict = buildVerdict(alert, gc, dir);
+    const card = buildCard(alert, gc, dir, verdict);
+
+    if (dir === 'calls') callsList.push(card);
+    else if (dir === 'puts') putsList.push(card);
+    else if (dir === 'conflict') conflictList.push(card);
+    else skipList.push(card);
+  });
+
+  // Also include non-entry active signals (patterns, LIQ sweeps) as skip/info
+  // (already covered by activeMap which tracks entries)
+
+  function renderGrid(id, countId, items, emptyMsg) {
+    const grid = document.getElementById(id);
+    const cnt  = document.getElementById(countId);
+    if (!grid || !cnt) return;
+    cnt.textContent = items.length;
+    cnt.className = items.length > 0 ? 'section-count live' : 'section-count';
+    grid.innerHTML = items.length > 0 ? items.join('') : `<div class="empty-section">${emptyMsg}</div>`;
+  }
+
+  renderGrid('gridCalls',    'countCalls',    callsList,    'No active calls setups — awaiting IE signals above GEX Flip');
+  renderGrid('gridPuts',     'countPuts',     putsList,     'No active puts setups — awaiting IE signals below GEX Flip');
+  renderGrid('gridConflict', 'countConflict', conflictList, 'No conflicts detected');
+  renderGrid('gridSkip',     'countSkip',     skipList,     'No skip signals');
+
+  // Stats
+  document.getElementById('sCalls').textContent    = callsList.length;
+  document.getElementById('sPuts').textContent     = putsList.length;
+  document.getElementById('sConflict').textContent = conflictList.length;
+  document.getElementById('sSkip').textContent     = skipList.length;
+  document.getElementById('sActive').textContent   = entries.length;
+
+  const last = allAlerts.find(a => a);
+  if (last) document.getElementById('sLast').textContent = `${last.ticker} ${formatTime(last.timestamp)}`;
+
+  document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString('en-US', {timeZone:'America/New_York',hour12:false})} ET — ${entries.length} active signal${entries.length !== 1 ? 's' : ''}`;
+}
+
+function buildCard(alert, gc, dir, verdict) {
+  const isCarry = ['4h','1d'].includes(normTf(alert.timeframe));
+  const score = alert.score;
+  const sizeLabel = !score ? '' : score >= 9 ? 'Full size' : score >= 7 ? 'Standard' : score >= 5 ? 'Half size' : 'Skip';
+  const sizeColor = !score ? '' : score >= 9 ? 'green' : score >= 7 ? 'gold' : 'warn';
+
+  const decCls = {calls:'dec-calls',puts:'dec-puts',conflict:'dec-conflict',skip:'dec-skip',wait:'dec-wait'}[dir] || 'dec-wait';
+  const decLabel = {calls:'▲ CALLS',puts:'▼ PUTS',conflict:'CONFLICT',skip:'SKIP',wait:'ENTER LEVELS'}[dir] || 'WAIT';
+  const vCls = {calls:'v-calls',puts:'v-puts',conflict:'v-conflict',skip:'v-skip',wait:'v-wait'}[dir] || 'v-wait';
+
+  // Gamma level display
+  const flipTag  = gc.hasLevels && gc.flip     ? `<span class="lev-item"><span class="lev-label">FLIP</span><span class="lev-val flip">$${gc.flip}</span></span>` : '';
+  const cwTag    = gc.hasLevels && gc.callWall ? `<span class="lev-item"><span class="lev-label">CW</span><span class="lev-val call-wall">$${gc.callWall}</span></span>` : '';
+  const pwTag    = gc.hasLevels && gc.putWall  ? `<span class="lev-item"><span class="lev-label">PW</span><span class="lev-val put-wall">$${gc.putWall}</span></span>` : '';
+  const vuTag    = gc.hasLevels && gc.vu       ? `<span class="lev-item"><span class="lev-label">VU</span><span class="lev-val orange">$${gc.vu}</span></span>` : '';
+  const t1Tag    = alert.t1                    ? `<span class="lev-item"><span class="lev-label">T1</span><span class="lev-val t1">$${alert.t1}</span></span>` : '';
+  const t2Tag    = alert.t2                    ? `<span class="lev-item"><span class="lev-label">T2</span><span class="lev-val t2">$${alert.t2}</span></span>` : '';
+  const slTag    = alert.sl                    ? `<span class="lev-item"><span class="lev-label">SL</span><span class="lev-val sl">$${alert.sl}</span></span>` : '';
+  const entryTag = alert.entry                 ? `<span class="lev-item"><span class="lev-label">ENTRY</span><span class="lev-val entry">$${alert.entry}</span></span>` : '';
+
+  const regimeDisp = gc.hasLevels
+    ? `<span class="cb-val ${gc.aboveFlip === null ? 'dim' : gc.aboveFlip ? 'green' : 'red'}">${gc.hasLevels ? gc.regime : '—'}</span>`
+    : `<span class="no-gamma">NO LEVELS</span>`;
+
+  const scoreDisp = score
+    ? `<span class="cb-val ${score >= 9 ? 'green' : score >= 7 ? 'gold' : score >= 5 ? 'warn' : 'red'}">${score}/10</span>`
+    : '<span class="cb-val dim">—</span>';
+
+  const triggerDisp = alert.trigger
+    ? `<span class="cb-val cyan">${alert.trigger}</span>`
+    : '<span class="cb-val dim">—</span>';
+
+  const carryTag = isCarry ? `<span class="carry-tag">CARRY</span>` : '';
+  const noGammaTag = !gc.hasLevels ? `<span class="no-gamma">ADD LEVELS</span>` : '';
+
+  return `
+  <div class="ticker-card dir-${dir}">
+    <div class="card-stripe"></div>
+    <div class="card-inner">
+      <div class="card-top">
+        <span class="card-ticker">${alert.ticker}</span>
+        <span class="card-decision ${decCls}">${decLabel}</span>
+        <span class="card-tf ${tfCls(alert.timeframe)}">${normTf(alert.timeframe).toUpperCase()}</span>
+        ${carryTag}${noGammaTag}
+        ${score ? `<span class="card-score">${score}/10</span>` : ''}
+      </div>
+      <div class="card-body">
+        <div class="cb-section">
+          <div class="cb-title">IE SIGNAL</div>
+          <div class="cb-row"><span class="cb-key">Score</span>${scoreDisp}</div>
+          <div class="cb-row"><span class="cb-key">Signal</span><span class="cb-val ${alert.signal==='CALLS'?'green':'red'}">${alert.signal}</span></div>
+          <div class="cb-row"><span class="cb-key">Trigger</span>${triggerDisp}</div>
+          <div class="cb-row"><span class="cb-key">Size</span><span class="cb-val ${sizeColor}">${sizeLabel || '—'}</span></div>
+        </div>
+        <div class="cb-section">
+          <div class="cb-title">GAMMA CONTEXT</div>
+          <div class="cb-row"><span class="cb-key">Regime</span>${regimeDisp}</div>
+          <div class="cb-row"><span class="cb-key">GEX Flip</span><span class="cb-val gold">${gc.flip ? '$'+gc.flip : '—'}</span></div>
+          <div class="cb-row"><span class="cb-key">Call Wall</span><span class="cb-val green">${gc.callWall ? '$'+gc.callWall : '—'}</span></div>
+          <div class="cb-row"><span class="cb-key">Put Wall</span><span class="cb-val red">${gc.putWall ? '$'+gc.putWall : '—'}</span></div>
+        </div>
+      </div>
+      <div class="card-verdict ${vCls}">${verdict}</div>
+      <div class="card-levels">
+        ${entryTag}${slTag}${t1Tag}${t2Tag}${flipTag}${cwTag}${pwTag}${vuTag}
+      </div>
+      <div class="card-age">Signal fired ${formatAge(alert.timestamp)} at ${formatTime(alert.timestamp)} ET</div>
+    </div>
+  </div>`;
+}
+
+// ── SSE CONNECTION ───────────────────────────────────────────
+function connect() {
+  if (es) es.close();
+  es = new EventSource('/stream');
+
+  es.onopen = () => {
+    document.getElementById('liveStatus').className = 'live-dot';
+    document.getElementById('liveLabel').textContent = 'LIVE';
+  };
+
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'init') {
+      allAlerts = data.alerts || [];
+      rebuildActive();
+      renderDash();
+    } else if (data.type === 'alert') {
+      allAlerts.unshift(data.alert);
+      applyActive(data.alert);
+      renderDash();
+      showToast(data.alert);
+    } else if (data.type === 'clear') {
+      allAlerts = [];
+      activeMap.clear();
+      renderDash();
+    }
+  };
+
+  es.onerror = () => {
+    document.getElementById('liveStatus').className = 'live-dot disconnected';
+    document.getElementById('liveLabel').textContent = 'RECONNECTING';
+    setTimeout(connect, 3000);
+  };
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+function showToast(alert) {
+  if (!alert || !isEntry(alert.type)) return;
+  const toast = document.getElementById('toast');
+  const gc = gammaContext(alert.ticker, alert.entry || 0);
+  const dir = decideTradeDir(alert, gc);
+  document.getElementById('toastTicker').textContent = `${alert.ticker}  ${normTf(alert.timeframe).toUpperCase()}`;
+  document.getElementById('toastBody').textContent = dir === 'calls' ? '▲ CALLS CONFIRMED — gamma aligned' : dir === 'puts' ? '▼ PUTS CONFIRMED — gamma aligned' : dir === 'conflict' ? 'CONFLICT — IE and gamma disagree' : 'Signal received — check dashboard';
+  toast.className = 'show ' + (dir === 'calls' ? 't-calls' : dir === 'puts' ? 't-puts' : 't-conflict');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.className = ''; }, 5000);
+}
+
+// ── CLOCK + SESSION ──────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const h = et.getHours(), m = et.getMinutes(), s = et.getSeconds();
+  document.getElementById('clock').textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} ET`;
+
+  const badge = document.getElementById('sessionBadge');
+  const totalMins = h * 60 + m;
+  if (totalMins < 9 * 60 + 30) {
+    badge.className = 'session-badge pre';
+    badge.textContent = 'PRE-MARKET';
+  } else if (totalMins < 16 * 60) {
+    badge.className = 'session-badge open';
+    badge.textContent = 'SESSION OPEN';
+  } else {
+    badge.className = 'session-badge closed';
+    badge.textContent = 'SESSION CLOSED';
+  }
+}
+
+// ── SETUP HINT UPDATE ────────────────────────────────────────
+function updateSetupHint() {
+  const count = TICKERS.filter(t => {
+    const g = gammaLevels[t];
+    return g && g.flip;
+  }).length;
+  if (count > 0) {
+    document.getElementById('setupSub').textContent = `${count}/${TICKERS.length} tickers have gamma levels set — click to edit`;
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+loadLevels().then(() => {
+  buildSetupPanel();
+  updateSetupHint();
+  renderDash();
+});
+connect();
+setInterval(updateClock, 1000);
+setInterval(() => renderDash(), 30000); // Refresh ages every 30s
+updateClock();
+</script>
+</body>
+</html>
