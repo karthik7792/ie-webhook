@@ -273,6 +273,19 @@ function extractVerdict(text) {
   return text.split('\n')[0].slice(0, 140);
 }
 
+// ── Explicit static page routes ───────────────────────────────
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/gamma-dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'gamma-dashboard.html'));
+});
+
+app.get('/gamma-dashboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'gamma-dashboard.html'));
+});
+
 // ── Start ─────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`IE Webhook running on port ${PORT}`));
