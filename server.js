@@ -44,7 +44,6 @@ app.use((req, res, next) => {
   });
 });
 app.use(express.json());
-app.use(express.static('.'));
 
 // Load persisted alerts on startup
 let alerts = loadAlerts();
@@ -273,7 +272,7 @@ function extractVerdict(text) {
   return text.split('\n')[0].slice(0, 140);
 }
 
-// ── Explicit static page routes ───────────────────────────────
+// ── Explicit static page routes ──────────────────────────────
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -285,6 +284,8 @@ app.get('/gamma-dashboard', (req, res) => {
 app.get('/gamma-dashboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'gamma-dashboard.html'));
 });
+
+app.use(express.static('.'));
 
 // ── Start ─────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
